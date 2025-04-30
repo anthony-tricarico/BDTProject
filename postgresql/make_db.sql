@@ -69,7 +69,7 @@ DELIMITER ','
 CSV HEADER;
 
 COPY stop_times (trip_id,arrival_time,departure_time,stop_id,stop_sequence)
-FROM '/docker-entrypoint-initdb.d/trentino_trasporti/stop_times.txt'
+FROM '/docker-entrypoint-initdb.d/trentino_trasporti/stop_times_cleaned.txt'
 -- FROM '/data/trentino_trasporti/stop_times.txt'
 DELIMITER ','
 CSV HEADER;

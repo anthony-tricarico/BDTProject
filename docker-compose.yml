@@ -1,6 +1,13 @@
 services:
+  static_data_cleaner:
+    build:
+      context: ./static_data_cleaner
+    volumes:
+      - ./data:/data
   db:
     build:
+      # sets where the docker engine will go look for resources to build this image
+      # this includes also looking for data.
       context: ./postgresql
     restart: always
     # set shared memory limit when using docker-compose
@@ -29,11 +36,6 @@ services:
     ports:
       - 8080:8080
 
-  python_sql_test:
-    # test service to query data
-    build:
-      context: ./query_data
-
   ipython:
     # interactive service to make SQL queries
     build: ./ipython-client
@@ -45,3 +47,5 @@ services:
     command: ipython
     tty: true
     stdin_open: true
+    volumes:
+      - ./data:/data

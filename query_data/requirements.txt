@@ -1,3 +1,0 @@
-# psychopg2-binary==2.9.10
-sqlalchemy==2.0
-pandas==2.2.3
