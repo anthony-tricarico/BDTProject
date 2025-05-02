@@ -1,4 +1,5 @@
 services:
+  #! consider removing this in the next version as data should be cleaned in a different way through a pipeline maybe
   static_data_cleaner:
     build:
       context: ./static_data_cleaner
@@ -9,7 +10,8 @@ services:
       # sets where the docker engine will go look for resources to build this image
       # this includes also looking for data.
       context: ./postgresql
-    restart: always
+    # originally set to "always" so that everytime the docker daemon is restarted this is rerun automatically and the container starts automatically
+    restart: no
     # set shared memory limit when using docker-compose
     shm_size: 128mb
     # or set shared memory limit when deploy via swarm stack
@@ -31,7 +33,8 @@ services:
   adminer:
     # used to create the graphical access interface to the database
     image: adminer
-    restart: always
+    # originally set to "always" so that everytime the docker daemon is restarted this is rerun automatically and the container starts automatically
+    restart: no
     # makes it possible to access it from localhost:8080 port from browser
     ports:
       - 8080:8080
