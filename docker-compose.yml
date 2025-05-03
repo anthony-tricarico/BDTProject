@@ -1,10 +1,4 @@
 services:
-  #! consider removing this in the next version as data should be cleaned in a different way through a pipeline maybe
-  static_data_cleaner:
-    build:
-      context: ./static_data_cleaner
-    volumes:
-      - ./data:/data
   db:
     build:
       # sets where the docker engine will go look for resources to build this image
@@ -39,16 +33,33 @@ services:
     ports:
       - 8080:8080
 
-  ipython:
-    # interactive service to make SQL queries
-    build: ./ipython-client
-    # clearly signals the dependency to db
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+
+  kafka:
+    image: confluentinc/cp-kafka:7.3.0
     depends_on:
-      - db
-    # working_dir: /app
-    # sets a name for the command executable in the terminal
-    command: ipython
-    tty: true
-    stdin_open: true
-    volumes:
-      - ./data:/data
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  kafka-producer-passengers:
+    build: ./kafka-producer-passengers
+    depends_on:
+      - kafka
+
+  kafka-consumer-passengers:
+    build: ./kafka-consumer-passengers
+    depends_on:
+      - kafka
+    restart: on-failure
+    ports:
+      - 8000:8000
