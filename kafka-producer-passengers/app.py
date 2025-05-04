@@ -4,6 +4,7 @@ import json
 import time
 from datetime import datetime, timedelta
 import pandas as pd
+from multiprocessing import Process
 from pickle import load
 
 # Load your model and encoder (ensure files are included in Docker image)
@@ -27,9 +28,6 @@ def create_kafka_producer():
             time.sleep(3)
     return producer
 
-# Use it in your main code
-producer = create_kafka_producer()
-
 TIME_MULTIPLIER = 300
 real_start = time.time()
 app_start = datetime(2025, 1, 1, 6, 0, 0)
@@ -40,6 +38,8 @@ def get_simulated_time():
     return app_start + elapsed_simulated
 
 def get_passengers(stop, route):
+    # Use it in your main code
+    producer = create_kafka_producer()
     while True:
         sim_time = get_simulated_time()
         seconds = (sim_time - sim_time.replace(hour=0, minute=0, second=0)).total_seconds()
@@ -67,4 +67,20 @@ def get_passengers(stop, route):
         producer.send('bus.passenger.predictions', value=payload)
         time.sleep(2)
 
-get_passengers(2278, '5')
+stops = [1001, 1002, 1003]
+routes = ['5', '7', '10']
+
+# use multi process to generate in parallel for each stop and route
+def start_simulation():
+    processes = []
+    for stop in stops:
+        for route in routes:
+            p = Process(target=get_passengers, args=(stop, route))
+            p.start()
+            processes.append(p)
+
+    for p in processes:
+        p.join()
+
+start_simulation()
+# get_passengers(2278, '5')
