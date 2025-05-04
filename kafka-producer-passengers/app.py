@@ -6,9 +6,6 @@ from datetime import datetime, timedelta
 import pandas as pd
 from pickle import load
 
-# ensures kafka services start up correctly before sending messages
-time.sleep(5)
-
 # Load your model and encoder (ensure files are included in Docker image)
 with open("treemodel.pkl", "rb") as f:
     model = load(f)
@@ -16,10 +13,22 @@ with open("treemodel.pkl", "rb") as f:
 with open("labelencoder.pkl", "rb") as f:
     le = load(f)
 
-producer = KafkaProducer(
-    bootstrap_servers='kafka:9092',
-    value_serializer=lambda v: json.dumps(v).encode('utf-8')
-)
+def create_kafka_producer():
+    producer = None
+    while producer is None:
+        try:
+            producer = KafkaProducer(
+                bootstrap_servers='kafka:9092',
+                value_serializer=lambda v: json.dumps(v).encode('utf-8')
+            )
+            print("Kafka producer connected.")
+        except Exception as e:
+            print(f"Kafka not ready, retrying in 3 seconds... ({e})")
+            time.sleep(3)
+    return producer
+
+# Use it in your main code
+producer = create_kafka_producer()
 
 TIME_MULTIPLIER = 300
 real_start = time.time()
@@ -40,7 +49,14 @@ def get_passengers(stop, route):
             'encoded_routes': [le.transform([route])[0]]
         })
 
-        passenger_num = int(model.predict(data_x)[0])
+        hour_stop = 2 # the time when bus stops service
+        hour_start = 6 # the time when bus starts service
+
+        if seconds > 3600 * hour_stop and seconds < 3600 * hour_start:
+            passenger_num = 0
+        else:
+            passenger_num = int(model.predict(data_x)[0])
+
         payload = {
             'timestamp': sim_time.isoformat(),
             'stop_id': stop,

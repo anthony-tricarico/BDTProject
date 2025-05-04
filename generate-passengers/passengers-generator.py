@@ -44,6 +44,6 @@ def get_passengers(stop, route):
         print(sim_time)
         print(passenger_num)
 
-        time.sleep(2)  # Every 2 seconds == 5 minutes in the app
+        time.sleep(1)  # Every 2 seconds == 5 minutes in the app
 
 print(get_passengers(2278, '5'))
