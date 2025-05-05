@@ -33,6 +33,14 @@ services:
     ports:
       - 8080:8080
 
+  mongodb:
+    image: mongo
+    container_name: mongodb
+    ports:
+      - 27017:27017
+    # volumes:
+    #   - mongo_data:/data/db
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.0
     environment:
@@ -81,6 +89,7 @@ services:
     build: ./kafka-producer-sensors
     depends_on:
       - kafka
+
   kafka-consumer-sensors:
     build: ./kafka-consumer-sensors
     depends_on:
@@ -88,3 +97,12 @@ services:
       - kafka-consumer-passengers
     ports:
       - 8002:8002
+
+  mongodb-sensors:
+    build: ./mong/sensors
+    depends_on:
+      - kafka-consumer-sensors
+    ports:
+      - 8003:8003
+# volumes:
+#   mongo_data:

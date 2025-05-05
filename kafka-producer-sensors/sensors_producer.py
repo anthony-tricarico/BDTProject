@@ -45,7 +45,7 @@ def generate_sensors(msg):
     measurement_id = f"{msg['stop_id']}-{msg['route']}-{msg['timestamp']}-{random.randint(1000, 9999)}"
 
     return {
-        "ticket_id": measurement_id,
+        "measurement_id": measurement_id,
         "timestamp": msg['timestamp'],
         "stop_id": msg['stop_id'],
         "route": msg['route'],
