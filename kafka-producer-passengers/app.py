@@ -13,6 +13,9 @@ with open("treemodel.pkl", "rb") as f:
 with open("labelencoder.pkl", "rb") as f:
     le = load(f)
 
+with open("treemodel_out.pkl", "rb") as f:
+    model_out = load(f)
+
 def create_kafka_producer():
     producer = None
     while producer is None:
@@ -56,13 +59,15 @@ def get_passengers(stop, route):
         if seconds > 3600 * hour_stop and seconds < 3600 * hour_start:
             break # passenger_num = 0
         else:
-            passenger_num = int(model.predict(data_x)[0])
+            passenger_in = int(model.predict(data_x)[0])
+            passenger_out = int(model_out.predict(data_x)[0])
 
         payload = {
             'timestamp': sim_time.isoformat(),
             'stop_id': stop,
             'route': route,
-            'predicted_passengers': passenger_num
+            'predicted_passengers_in': passenger_in,
+            'predicted_passengers_out': passenger_out,
         }
         print("Sending:", payload)
         producer.send('bus.passenger.predictions', value=payload)
