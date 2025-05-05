@@ -1,5 +1,5 @@
 from kafka import KafkaConsumer
-from pymongo import MongoClient
+from pymongo import MongoClient, UpdateOne
 import json
 import time
 
@@ -36,31 +36,39 @@ def add_to_mongodb():
 
     while consumer:
     # Consume and store
-        for message in consumer:
-            topic = message.topic
-            data = message.value
+        messages = consumer.poll(timeout_ms=1000, max_records=100)
 
-            if topic in TOPIC_COLLECTION_MAP:
-                collection_name = TOPIC_COLLECTION_MAP[topic]
-                collection = db[collection_name]
+        for topic_partition, msgs in messages.items():
+            topic = topic_partition.topic
+            collection_name = TOPIC_COLLECTION_MAP.get(topic)
+            if not collection_name:
+                continue
+            collection = db[collection_name]
 
-                # Choose unique key field per topic
-                if topic == "sensors.topic":
-                    unique_field = "measurement_id"
-                elif topic == "ticketing.topic":
-                    unique_field = "ticket_id"
-                elif topic == "bus.passenger.predictions":
-                    unique_field = "prediction_id"
-                else:
-                    continue
+            # Choose unique key per topic
+            if topic == "sensors.topic":
+                unique_field = "measurement_id"
+            elif topic == "ticketing.topic":
+                unique_field = "ticket_id"
+            elif topic == "bus.passenger.predictions":
+                unique_field = "prediction_id"
+            else:
+                continue
 
-                # Upsert by unique ID
+            operations = []
+            for message in msgs:
+                data = message.value
                 if unique_field in data:
-                    collection.update_one(
-                        {unique_field: data[unique_field]},
-                        {"$set": data},
-                        upsert=True
+                    operations.append(
+                        UpdateOne(
+                            {unique_field: data[unique_field]},
+                            {"$set": data},
+                            upsert=True
+                        )
                     )
+
+            if operations:
+                collection.bulk_write(operations, ordered=False)
 
 if __name__ == "__main__":
     add_to_mongodb()
