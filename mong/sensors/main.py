@@ -1,94 +1,66 @@
-from fastapi import FastAPI
-from pymongo import MongoClient, UpdateOne
-import httpx
+from kafka import KafkaConsumer
+from pymongo import MongoClient
+import json
+import time
 
-app = FastAPI()
-
-# MongoDB connection
+# MongoDB setup
 client = MongoClient("mongodb://mongodb:27017")
 db = client["raw"]
-collection_sensors = db["sensors"]
-collection_tickets = db["tickets"]
 
-# API endpoint: sensors
-SOURCE_API_SENSORS = "http://kafka-consumer-sensors:8002/stream_sensors"
-SOURCE_API_TICKETS = "http://kafka-consumer-tickets:8001/stream_tickets"
+# Topics to listen to
+TOPIC_COLLECTION_MAP = {
+    "sensors.topic": "sensors",
+    "ticketing.topic": "tickets",
+    "bus.passenger.predictions": "passengers"
+}
+def add_to_mongodb():
+    print("Starting Kafka consumer thread...")
 
-@app.get("/")
-def health():
-    return {"status": "ok"}
+    # Retry loop for Kafka connection
+    consumer = None
+    while consumer is None:
+        try:
+            # Create Kafka consumer
+            consumer = KafkaConsumer(
+                *TOPIC_COLLECTION_MAP.keys(),  # Subscribes to all topics in the map
+                bootstrap_servers='kafka:9092',
+                value_deserializer=lambda m: json.loads(m.decode('utf-8')),
+                auto_offset_reset='earliest',
+                enable_auto_commit=True,
+                group_id='multi-consumer-group'
+            )
+            print("Kafka consumer connected.")
+        except Exception as e:
+            print(f"Kafka not ready, retrying in 3 seconds... ({e})")
+            time.sleep(3)
 
-# post data from sensors API to MongoDB
-@app.post("/pull-and-store-sensors")
-async def pull_and_store():
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(SOURCE_API_SENSORS)
-            response.raise_for_status()
-            try:
-                data = response.json()
-            except Exception as e:
-                return {"status": "error", "detail": f"JSON parse error: {str(e)}"}
+    while consumer:
+    # Consume and store
+        for message in consumer:
+            topic = message.topic
+            data = message.value
 
-        if not data:
-            return {"status": "error", "detail": "No data received"}
+            if topic in TOPIC_COLLECTION_MAP:
+                collection_name = TOPIC_COLLECTION_MAP[topic]
+                collection = db[collection_name]
 
-        if isinstance(data, list):
-            bulk_ops = []
-            for entry in data:
-                sensor_id = entry.get("measurement_id")
-                if not sensor_id:
+                # Choose unique key field per topic
+                if topic == "sensors.topic":
+                    unique_field = "measurement_id"
+                elif topic == "ticketing.topic":
+                    unique_field = "ticket_id"
+                elif topic == "bus.passenger.predictions":
+                    unique_field = "prediction_id"
+                else:
                     continue
-                bulk_ops.append(
-                    UpdateOne({"sensor_id": sensor_id}, {"$set": entry}, upsert=True)
-                )
-            if bulk_ops:
-                result = collection_sensors.bulk_write(bulk_ops)
-                return {"status": "stored", "inserted": result.upserted_count, "updated": result.modified_count}
-        else:
-            sensor_id = data.get("measurement_id")
-            if sensor_id:
-                collection_sensors.update_one({"sensor_id": sensor_id}, {"$set": data}, upsert=True)
-                return {"status": "stored", "records": 1}
-            return {"status": "error", "detail": "Missing measurement_id"}
 
-    except Exception as e:
-        # Log or return full error for debugging
-        return {"status": "error", "detail": f"Unhandled exception: {str(e)}"}
+                # Upsert by unique ID
+                if unique_field in data:
+                    collection.update_one(
+                        {unique_field: data[unique_field]},
+                        {"$set": data},
+                        upsert=True
+                    )
 
-@app.post("/pull-and-store-tickets")
-async def pull_and_store():
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(SOURCE_API_TICKETS)
-            response.raise_for_status()
-            try:
-                data = response.json()
-            except Exception as e:
-                return {"status": "error", "detail": f"JSON parse error: {str(e)}"}
-
-        if not data:
-            return {"status": "error", "detail": "No data received"}
-
-        if isinstance(data, list):
-            bulk_ops = []
-            for entry in data:
-                ticket_id = entry.get("ticket_id")
-                if not ticket_id:
-                    continue
-                bulk_ops.append(
-                    UpdateOne({"ticket_id": ticket_id}, {"$set": entry}, upsert=True)
-                )
-            if bulk_ops:
-                result = collection_tickets.bulk_write(bulk_ops)
-                return {"status": "stored", "inserted": result.upserted_count, "updated": result.modified_count}
-        else:
-            ticket_id = data.get("ticket_id")
-            if ticket_id:
-                collection_tickets.update_one({"sensor_id": ticket_id}, {"$set": data}, upsert=True)
-                return {"status": "stored", "records": 1}
-            return {"status": "error", "detail": "Missing measurement_id"}
-
-    except Exception as e:
-        # Log or return full error for debugging
-        return {"status": "error", "detail": f"Unhandled exception: {str(e)}"}
+if __name__ == "__main__":
+    add_to_mongodb()

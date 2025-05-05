@@ -42,7 +42,9 @@ def get_simulated_time(real_start = time.time()):
     elapsed_simulated = timedelta(seconds=elapsed_real * TIME_MULTIPLIER)
     return app_start + elapsed_simulated
 
+pred_id = 0
 def get_passengers(stop, route):
+    global pred_id
     real_start = time.time()
     while True:
         sim_time = get_simulated_time(real_start=real_start)
@@ -63,6 +65,7 @@ def get_passengers(stop, route):
             passenger_out = int(model_out.predict(data_x)[0])
 
         payload = {
+            'prediction_id': pred_id,
             'timestamp': sim_time.isoformat(),
             'stop_id': stop,
             'route': route,
@@ -71,6 +74,7 @@ def get_passengers(stop, route):
         }
         print("Sending:", payload)
         producer.send('bus.passenger.predictions', value=payload)
+        pred_id += 1
         time.sleep(0.1)
 
 with open("route_to_stops.json", "r") as f:
