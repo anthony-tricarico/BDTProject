@@ -33,7 +33,7 @@ def create_kafka_producer():
 # Use it in your main code
 producer = create_kafka_producer()
 
-TIME_MULTIPLIER = 10e3 # about every 15 min
+TIME_MULTIPLIER = 10e3 # about every 15 min considering a delay in the function call of 0.1 seconds
 
 app_start = datetime(2025, 1, 1, 6, 0, 0)
 

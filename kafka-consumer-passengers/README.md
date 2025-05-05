@@ -1,6 +1,6 @@
-# API
+# Passengers API
 
-This API exposes the following endpoints on port 8080 of local host:
+This API exposes the following endpoints on port 8000 of local host:
 
 1. /latest -> returns the latest measurement
 2. /stream -> returns the latest 100 measurements

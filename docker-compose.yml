@@ -63,3 +63,16 @@ services:
     restart: on-failure
     ports:
       - 8000:8000
+
+  kafka-producer-tickets:
+    build: ./kafka-producer-tickets
+    depends_on:
+      - kafka
+
+  kafka-consumer-tickets:
+    build: ./kafka-consumer-tickets
+    depends_on:
+      - kafka
+      - kafka-consumer-passengers
+    ports:
+      - 8001:8001
