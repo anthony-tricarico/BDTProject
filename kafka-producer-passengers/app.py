@@ -43,6 +43,19 @@ def get_simulated_time(real_start = time.time()):
     return app_start + elapsed_simulated
 
 pred_id = 0
+# TODO: find way to generate predictions for fixed timestamps. The returned result should include:
+# - trip_id
+# - fixed timestamp (parse arrival time from file and attach to app_start)
+# - route_id
+# - stop_id
+# payload = {
+#             'prediction_id': pred_id,
+#             'timestamp': sim_time.isoformat(),
+#             'stop_id': stop,
+#             'route': route,
+#             'predicted_passengers_in': passenger_in,
+#             'predicted_passengers_out': passenger_out,
+#         }
 def get_passengers(stop, route):
     global pred_id
     real_start = time.time()
