@@ -115,3 +115,13 @@ services:
     environment:
       - SLEEP=0.5
     restart: on-failure
+
+  kafka-producer-traffic:
+    build: ./kafka-producer-traffic
+    depends_on:
+      - kafka
+      - kafka-consumer-passengers
+      - db
+    environment:
+      - SLEEP=0.5
+    restart: on-failure

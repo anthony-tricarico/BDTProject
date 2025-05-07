@@ -41,7 +41,6 @@ def create_db_connection():
 
 # get the max number of buses
 
-print('after db connection')
 def create_kafka_producer():
     producer = None
     while producer is None:

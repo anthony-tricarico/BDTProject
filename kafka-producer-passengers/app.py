@@ -67,7 +67,7 @@ def create_kafka_producer():
 
 producer = create_kafka_producer()
 
-app_start = datetime(2025, 1, 1, 0, 0, 0)
+app_start = (datetime.today() + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)# app_start = datetime(2025, 1, 1, 0, 0, 0)
 
 pred_id = 0
 
