@@ -30,6 +30,7 @@ db_name = 'raw_data'
 
 # SQLAlchemy connection string
 engine = create_engine(f'postgresql+psycopg2://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}')
+
 def create_db_connection():
     global engine
     connection = None
@@ -64,7 +65,6 @@ def create_kafka_producer():
             time.sleep(3)
     return producer
 
-# Use it in your main code
 producer = create_kafka_producer()
 
 app_start = datetime(2025, 1, 1, 0, 0, 0)
@@ -86,7 +86,7 @@ def get_passengers():
     global bus_active_list
     global app_start
 
-    real_start = time.time()
+    # real_start = time.time()
     while True:
         # for each trip_id get stop and route, and assign one unique bus to the trip 
         for trip_id in unique_trip_ids:
@@ -98,7 +98,8 @@ def get_passengers():
                 bus_active_list = []
                 bus_active_list.append(bus_deactive_list.pop())
             # get smaller dataset of unique trip
-            for _, row in df[df['trip_id'] == trip_id].iterrows():
+            # for testing does not include null shape ids
+            for _, row in df[(df['trip_id'] == trip_id) & ~(df['shape_id'].isna())].iterrows():
                 # extract relevant information for each row wich corresponds to a stop
                 shape_id = row.loc['shape_id']
                 trip_idx = trip_id
@@ -136,7 +137,6 @@ def get_passengers():
                 pred_id += 1
                 time.sleep(float(SLEEP))
 
-        # TODO: increase day at the end of all iterations
         app_start = app_start + timedelta(days=1) 
 
 

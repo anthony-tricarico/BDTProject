@@ -64,6 +64,7 @@ services:
     build: ./kafka-consumer-passengers
     depends_on:
       - kafka
+      - kafka-producer-passengers
     restart: on-failure
     ports:
       - 8000:8000
@@ -104,3 +105,13 @@ services:
       - kafka-consumer-sensors
     ports:
       - 8003:8003
+
+  kafka-producer-gps:
+    build: ./kafka-producer-gps
+    depends_on:
+      - kafka
+      - kafka-consumer-passengers
+      - db
+    environment:
+      - SLEEP=0.5
+    restart: on-failure
