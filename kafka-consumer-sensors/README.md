@@ -1,4 +1,4 @@
-# Sensors API
+# Sensors API (Legacy)
 
 This API exposes the following endpoints on port 8002 of local host:
 

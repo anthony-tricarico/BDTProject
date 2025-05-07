@@ -135,7 +135,7 @@ def generate_gps(msg, shape_id, index, timestamp):
 
 producer = create_kafka_producer()
 
-VELOCITY = 5 # km/h
+VELOCITY = 30 # km/h
 def poll_stream_and_generate_gps():
     global shapes_dct
     global engine

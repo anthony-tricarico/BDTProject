@@ -1,4 +1,4 @@
-# Tickets API
+# Tickets API (Legacy)
 
 This API exposes the following endpoints on port 8001 of local host:
 

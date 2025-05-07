@@ -5,7 +5,7 @@ In this directory there is the main configuration to run MongoDB, including diff
 # Current implementation
 
 The current implementation subscribes to Kafka topics from the tickets, passengers, and sensors API and pushes data into the MongoDB `raw` database based on the specific topic it is listening to.
-In the newer version, inserts are performed directly from the generator without the need to make calls to exposed APIs. Data is then inserted in the `passengers`, `tickets`, and `sensors` collections.
+In the newer version, inserts are performed directly from the generator without the need to make calls to exposed APIs. Data is then inserted in the `passengers`, `tickets`, `sensors`, `gps`, and `traffic` collections.
 
 # Example: Accessing and Querying MongoDB
 
