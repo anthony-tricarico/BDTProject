@@ -13,7 +13,8 @@ TOPIC_COLLECTION_MAP = {
     "ticketing.topic": "tickets",
     "bus.passenger.predictions": "passengers",
     "gps.topic": "gps",
-    "traffic.topic": "traffic"
+    "traffic.topic": "traffic",
+    "weather.topic": "weather"
 }
 def add_to_mongodb():
     print("Starting Kafka consumer thread...")
@@ -57,6 +58,8 @@ def add_to_mongodb():
             elif topic == "gps.topic":
                 unique_field = "measurement_id"
             elif topic == "traffic.topic":
+                unique_field = "measurement_id"
+            elif topic == "weather.topic":
                 unique_field = "measurement_id"
             else:
                 continue

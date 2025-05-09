@@ -14,7 +14,6 @@ def parse_time(ts):
         return datetime.fromisoformat(ts)
     return datetime.fromtimestamp(ts)
 
-
 def create_kafka_producer():
     producer = None
     while producer is None:
@@ -83,7 +82,7 @@ def poll_stream_and_generate_weather():
                         weather_dict = generate_weather(weather_data=weather_data, timestamp=str(timestamp))
                         if weather_dict is not None:
                             print("Sending sensor:", weather_dict)
-                            producer.send("weather.topic", value=weather_data)
+                            producer.send("weather.topic", value=weather_dict)
 
         except Exception as e:
             print("Error:", e)
