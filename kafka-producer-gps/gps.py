@@ -57,24 +57,6 @@ def create_kafka_producer():
 
 shapes_dct = dict()
 
-# def compute_distance(shapes_dct):
-#     """
-#     Computes Manhattan distances between points for each shape.
-#     Returns a dict: shape_id -> list of distances.
-#     """
-#     all_distances = {}
-#     for shape in shapes_dct:
-#         distances = []
-#         for coordinate in range(1, len(shapes_dct[shape]) - 1):
-#             point_1 = np.array(shapes_dct[shape][coordinate])
-#             point_2 = np.array(shapes_dct[shape][coordinate + 1])
-#             distance = np.sum(np.abs(point_1 - point_2))
-#             distances.append(float(distance))
-#         all_distances[shape] = distances
-#     return all_distances
-
-
-
 def compute_distance(shapes_dct):
     """
     Computes Manhattan distances between points for each shape in kilometers.

@@ -114,7 +114,7 @@ services:
       - db
     environment:
       - SLEEP=0.5
-    restart: on-failure
+    restart: no
 
   kafka-producer-traffic:
     build: ./kafka-producer-traffic
@@ -124,4 +124,14 @@ services:
       - db
     environment:
       - SLEEP=0.5
-    restart: on-failure
+    restart: no
+
+  kafka-producer-weather:
+    build: ./kafka-producer-weather
+    depends_on:
+      - kafka
+      - kafka-consumer-passengers
+      - db
+    environment:
+      - SLEEP=0.5
+    restart: no
