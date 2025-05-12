@@ -119,6 +119,7 @@ services:
     build: ./mong
     depends_on:
       - kafka-consumer-sensors
+      - mongodb
     ports:
       - 8003:8003
 
