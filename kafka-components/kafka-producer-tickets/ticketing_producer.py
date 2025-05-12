@@ -9,6 +9,33 @@ SLEEP = os.getenv("SLEEP")
 
 producer = create_kafka_producer()
 
+def generate_ticket(msg):
+
+    if not hasattr(generate_ticket, "idx"):
+        generate_ticket.idx = 0
+
+    ticket_id = f"{msg['stop_id']}-{msg['route']}-{msg['timestamp']}-{generate_ticket.idx}"
+
+    generate_ticket.idx += 1
+    
+    passenger_type = random.choice(["adult", "student", "senior"])
+    fare = {
+        "adult": 2.50,
+        "student": 1.25,
+        "senior": 1.00
+    }[passenger_type]
+
+    return {
+        "ticket_id": ticket_id,
+        "timestamp": msg['timestamp'],
+        "stop_id": msg['stop_id'],
+        "route": msg['route'],
+        "passenger_type": passenger_type,
+        "fare": fare,
+        "bus_id": msg['bus_id'],
+        "trip_id": msg['trip_id']
+    }
+
 def poll_stream_and_generate_tickets():
     while True:
         try:
@@ -30,25 +57,6 @@ def poll_stream_and_generate_tickets():
 
         time.sleep(float(SLEEP))
 
-def generate_ticket(msg):
-    ticket_id = f"{msg['stop_id']}-{msg['route']}-{msg['timestamp']}-{random.randint(1000, 9999)}"
-    passenger_type = random.choice(["adult", "student", "senior"])
-    fare = {
-        "adult": 2.50,
-        "student": 1.25,
-        "senior": 1.00
-    }[passenger_type]
-
-    return {
-        "ticket_id": ticket_id,
-        "timestamp": msg['timestamp'],
-        "stop_id": msg['stop_id'],
-        "route": msg['route'],
-        "passenger_type": passenger_type,
-        "fare": fare,
-        "bus_id": msg['bus_id'],
-        "trip_id": msg['trip_id']
-    }
 
 if __name__ == "__main__":
     poll_stream_and_generate_tickets()

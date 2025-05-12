@@ -11,7 +11,11 @@ SLEEP = os.getenv("SLEEP")
 producer = create_kafka_producer()
 
 def generate_sensors(msg):
-    measurement_id = f"{msg['stop_id']}-{msg['route']}-{msg['timestamp']}-{random.randint(1000, 9999)}"
+    if not hasattr(generate_sensors, "idx"):
+        generate_sensors.idx = 0
+    measurement_id = f"{msg['stop_id']}-{msg['route']}-{msg['timestamp']}-{generate_sensors.idx}"
+
+    generate_sensors.idx += 1
 
     return {
         "measurement_id": measurement_id,

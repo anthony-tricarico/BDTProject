@@ -1,86 +1,75 @@
+import time
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import current_timestamp, lit
+from pyspark.sql.functions import col, count
 from pymongo import MongoClient
 
-# ---- MongoDB Connectivity Check ----
+# MongoDB connection parameters
+MONGO_URI = "mongodb://localhost:27017"
+DATABASE = "raw"
+COLLECTIONS = ["passengers", "sensors"]  # Add more collections as needed
+POLL_INTERVAL_SECONDS = 5
+MAX_ITERATIONS = 12  # Poll for 1 minute (12 * 5s)
+
+# Step 1: Verify MongoDB connection
 try:
-    client = MongoClient("mongodb://localhost:27017", serverSelectionTimeoutMS=5000)
-    print("MongoDB connection successful. Databases:", client.list_database_names())
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=3000)
+    client.server_info()  # Forces a call to test connection
+    print("Connected to MongoDB.")
 except Exception as e:
-    print("MongoDB connection error:", e)
+    print(f"MongoDB connection error: {e}")
+    exit(1)
 
-# ---- Spark Session Setup ----
-mongodb_connector = "org.mongodb.spark:mongo-spark-connector_2.12:10.5.0"
-
+# Step 2: Initialize SparkSession with MongoDB connector
 spark = SparkSession.builder \
-    .appName("MongoSparkMultiCollectionAggregator") \
-    .config("spark.jars.packages", mongodb_connector) \
+    .appName("MongoDBPollingAggregation") \
+    .config("spark.jars.packages", "org.mongodb.spark:mongo-spark-connector_2.12:10.5.0") \
     .getOrCreate()
 
-spark.sparkContext.setLogLevel("WARN")
-
-# ---- Configurable Collections List ----
-collections = ["passengers", "sensors"]  # Add more collections here
-db_name = "raw"
-mongo_uri_base = "mongodb://localhost:27017"
-
-# ---- Function to Read and Tag DataFrame ----
+# Helper: Read a collection into a DataFrame
 def read_collection(collection_name):
     try:
-        df = spark.read \
-            .format("mongodb") \
-            .option("spark.mongodb.read.connection.uri", mongo_uri_base) \
-            .option("spark.mongodb.read.database", db_name) \
+        df = spark.read.format("mongodb") \
+            .option("spark.mongodb.read.connection.uri", MONGO_URI) \
+            .option("spark.mongodb.read.database", DATABASE) \
             .option("spark.mongodb.read.collection", collection_name) \
-            .load() \
-            .withColumn("source_collection", lit(collection_name))
+            .load()
+        print(f"✅ Successfully read collection '{collection_name}'")
         return df
     except Exception as e:
-        print(f"Failed to read collection '{collection_name}': {e}")
+        print(f"❌ Failed to read collection '{collection_name}': {e}")
         return None
 
+# Step 3: Polling loop (simulate streaming)
+for i in range(MAX_ITERATIONS):
+    print(f"\n--- Iteration {i + 1} ---")
 
-# ---- Streaming Batch Processor ----
-def process_batch(batch_df, batch_id):
-    print(f"\n--- Processing batch {batch_id} ---")
     try:
-        dataframes = []
-        for collection in collections:
-            df = read_collection(collection)
-            if df is not None:
-                dataframes.append(df)
+        # Read and combine collections
+        dfs = [read_collection(col_name) for col_name in COLLECTIONS]
+        dfs = [df for df in dfs if df is not None]
 
-        if dataframes:
-            combined_df = dataframes[0]
-            for df in dataframes[1:]:
-                combined_df = combined_df.unionByName(df, allowMissingColumns=True)
+        if not dfs:
+            print("No data loaded from any collection.")
+            time.sleep(POLL_INTERVAL_SECONDS)
+            continue
 
-            print(f"Combined row count: {combined_df.count()}")
-            combined_df.withColumn("timestamp", current_timestamp()).show(truncate=False)
-        else:
-            print("No data to aggregate.")
+        # Combine all collections
+        combined_df = dfs[0]
+        for df in dfs[1:]:
+            combined_df = combined_df.unionByName(df, allowMissingColumns=True)
+
+        # Perform aggregation: count of observations grouped by trip_id and stop_id
+        aggregated_df = combined_df.groupBy("stop_id", "route", "timestamp").agg(
+            count("*").alias("passenger_count")
+        )
+
+        print("🚌 Aggregated passenger counts:")
+        aggregated_df.show(50)
     except Exception as e:
-        print(f"Error processing batch {batch_id}: {e}")
+        print(f"❌ Error during aggregation: {e}")
 
-# ---- Dummy Stream Trigger ----
-try:
-    rate_stream = spark.readStream \
-        .format("rate") \
-        .option("rowsPerSecond", 1) \
-        .load()
+    time.sleep(POLL_INTERVAL_SECONDS)
 
-    query = rate_stream.writeStream \
-        .foreachBatch(process_batch) \
-        .outputMode("update") \
-        .trigger(processingTime="10 seconds") \
-        .start()
-
-    print("Streaming query started. Waiting for termination...")
-    query.awaitTermination()
-
-except Exception as e:
-    print(f"Streaming query error: {e}")
-
-finally:
-    print("Shutting down Spark session...")
-    spark.stop()
+# Cleanup
+spark.stop()
+print("✅ Spark session stopped.")
