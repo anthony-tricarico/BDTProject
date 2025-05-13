@@ -51,7 +51,9 @@ def create_kafka_consumer(topic: str, group_id: str) -> KafkaConsumer:
                 topic, 
                 bootstrap_servers="kafka:9092",
                 auto_offset_reset="earliest",
-                group_id="passenger-consumer-group"
+                group_id=group_id,
+                consumer_timeout_ms=5000,
+                enable_auto_commit=True
             )
             print("Kafka consumer connected.")
         except Exception as e:

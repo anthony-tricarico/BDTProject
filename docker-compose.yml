@@ -60,7 +60,7 @@ services:
       - kafka
       - db
     environment:
-      - SLEEP=0.5
+      - SLEEP=1
 
   kafka-consumer-passengers:
     build:

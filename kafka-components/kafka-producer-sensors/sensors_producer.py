@@ -18,6 +18,7 @@ def generate_sensors(msg):
     generate_sensors.idx += 1
 
     return {
+        # this must depend on an internal generator, otherwise it would be overwritten by the upsert operation in MongoDB
         "measurement_id": measurement_id,
         "timestamp": msg['timestamp'],
         "stop_id": msg['stop_id'],
@@ -29,7 +30,21 @@ def generate_sensors(msg):
         "trip_id": msg['trip_id']
     }
 
+    # return {
+    #     # this must depend on an internal generator, otherwise it would be overwritten by the upsert operation in MongoDB
+    #     "measurement_id": measurement_id,
+    #     "timestamp": msg['value']['timestamp'],
+    #     "stop_id": msg['value']['stop_id'],
+    #     "route": msg['value']['route'],
+    #     # hard-coded since the assumption is that 
+    #     "status": 1,
+    #     "activation_type": 2,
+    #     "bus_id": msg['value']['bus_id'],
+    #     "trip_id": msg['value']['trip_id']
+    # }
+
 def poll_stream_and_generate_sensors():
+    already_predicted = []
     while True:
         try:
             # Call Kafka-exposed API
@@ -38,12 +53,14 @@ def poll_stream_and_generate_sensors():
                 messages = response.json()
 
                 for msg in messages:
-                    predicted_out = msg.get('predicted_passengers_out', 0)
+                    if msg['prediction_id'] not in already_predicted:
+                        predicted_out = msg.get('predicted_passengers_out', 0)
+                        already_predicted.append(msg['prediction_id'])
 
-                    for i in range(predicted_out):
-                        sensor = generate_sensors(msg)
-                        print("Sending sensor:", sensor)
-                        producer.send("sensors.topic", value=sensor)
+                        for i in range(predicted_out):
+                            sensor = generate_sensors(msg)
+                            print("Sending sensor:", sensor)
+                            producer.send("sensors.topic", value=sensor)
 
         except Exception as e:
             print("Error:", e)

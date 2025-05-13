@@ -59,12 +59,12 @@ for i in range(MAX_ITERATIONS):
             combined_df = combined_df.unionByName(df, allowMissingColumns=True)
 
         # Perform aggregation: count of observations grouped by trip_id and stop_id
-        aggregated_df = combined_df.groupBy("stop_id", "route", "timestamp").agg(
+        aggregated_df = combined_df.groupBy("stop_id", "route", "timestamp", "trip_id").agg(
             count("*").alias("passenger_count")
         )
 
         print("🚌 Aggregated passenger counts:")
-        aggregated_df.show(50)
+        aggregated_df.show(100)
     except Exception as e:
         print(f"❌ Error during aggregation: {e}")
 
