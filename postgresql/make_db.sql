@@ -45,8 +45,8 @@ CREATE TABLE IF NOT EXISTS stops (
 );
 
 CREATE TABLE IF NOT EXISTS bus (
-	bus_id SERIAL,
-	total_capacity SMALLINT,
+	bus_id SMALLINT,
+	total_capacity INTEGER,
 	seats SMALLINT
 );
 
@@ -58,6 +58,31 @@ CREATE TABLE IF NOT EXISTS events (
 	end_time TIME,
 	location_event VARCHAR(120) 
 );
+
+-- CREATE TABLE bus_passenger_summary (
+--     id SERIAL PRIMARY KEY,
+--     stop_id TEXT NOT NULL,
+--     route TEXT NOT NULL,
+--     timestamp VARCHAR(120) NOT NULL,
+--     trip_id TEXT NOT NULL,
+--     passengers_off INTEGER DEFAULT 0,
+--     passengers_on INTEGER DEFAULT 0,
+--     UNIQUE (stop_id, route, timestamp, trip_id)
+-- );
+
+CREATE TABLE bus_passenger_summary (
+    stop_id TEXT,
+    route TEXT,
+    timestamp VARCHAR(120),
+    trip_id TEXT,
+    bus_id SMALLINT,
+    passengers_on INTEGER,
+    passengers_off INTEGER,
+    occupancy INTEGER,
+    occupancy_ratio DOUBLE PRECISION,
+    PRIMARY KEY (stop_id, route, timestamp, trip_id)
+);
+
 
 COPY trips (route_id,service_id,trip_id,trip_headsign,direction_id,shape_id,wheelchair_accessible)
 FROM '/docker-entrypoint-initdb.d/trentino_trasporti/trips.txt'
