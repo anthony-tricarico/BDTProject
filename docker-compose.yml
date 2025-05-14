@@ -158,3 +158,29 @@ services:
     environment:
       - SLEEP=0.5
     restart: no
+
+  spark-streaming:
+    build:
+      context: ./spark-components
+      dockerfile: ./Dockerfile
+    depends_on:
+      - kafka
+      - db
+      - mongodb
+    # volumes:
+    #   - ./spark-checkpoint:/tmp/checkpoint
+    environment:
+      - SPARK_LOCAL_IP=spark-streaming
+    restart: on-failure
+
+  sql-cron:
+    build: ./postgresql/sql-scripts
+    depends_on:
+      - db
+      - spark-streaming
+    environment:
+      - DB_NAME=raw_data
+      - DB_USER=postgres
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_PASSWORD=example

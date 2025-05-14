@@ -81,8 +81,9 @@ def get_passengers():
                     'encoded_routes': [le.transform([str(route)])[0]]
                 })
 
-                passenger_in = int(model.predict(data_x)[0])
-                passenger_out = int(model_out.predict(data_x)[0])
+                # Ensure the prediction is not negative
+                passenger_in = max(0, int(model.predict(data_x)[0]) - 10)
+                passenger_out = max(0, int(model_out.predict(data_x)[0]))
 
                 payload = {
                     'prediction_id': pred_id,

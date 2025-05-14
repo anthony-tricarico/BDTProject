@@ -70,18 +70,18 @@ CREATE TABLE IF NOT EXISTS events (
 --     UNIQUE (stop_id, route, timestamp, trip_id)
 -- );
 
-CREATE TABLE bus_passenger_summary (
-    stop_id TEXT,
-    route TEXT,
-    timestamp VARCHAR(120),
-    trip_id TEXT,
-    bus_id SMALLINT,
-    passengers_on INTEGER,
-    passengers_off INTEGER,
-    occupancy INTEGER,
-    occupancy_ratio DOUBLE PRECISION,
-    PRIMARY KEY (stop_id, route, timestamp, trip_id)
-);
+-- CREATE TABLE bus_passenger_summary (
+--     stop_id TEXT,
+--     route TEXT,
+--     timestamp VARCHAR(120),
+--     trip_id TEXT,
+--     bus_id SMALLINT,
+--     passengers_on INTEGER,
+--     passengers_off INTEGER,
+--     occupancy INTEGER,
+--     occupancy_ratio DOUBLE PRECISION,
+--     PRIMARY KEY (stop_id, route, timestamp, trip_id)
+-- );
 
 
 COPY trips (route_id,service_id,trip_id,trip_headsign,direction_id,shape_id,wheelchair_accessible)
