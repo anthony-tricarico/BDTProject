@@ -159,6 +159,14 @@ services:
       - SLEEP=0.5
     restart: no
 
+  kafka-consumer-weather:
+    build:
+      context: ./kafka-components
+      dockerfile: ./kafka-consumer-weather/Dockerfile
+    depends_on:
+      - kafka
+      - db
+
   spark-streaming:
     build:
       context: ./spark-components

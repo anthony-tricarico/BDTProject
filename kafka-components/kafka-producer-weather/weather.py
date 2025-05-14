@@ -1,7 +1,6 @@
 import requests
 import json
 import time
-from kafka import KafkaProducer
 import os
 from datetime import datetime, timedelta
 from utils.time_utils import parse_time

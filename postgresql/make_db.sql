@@ -59,6 +59,16 @@ CREATE TABLE IF NOT EXISTS events (
 	location_event VARCHAR(120) 
 );
 
+CREATE TABLE IF NOT EXISTS weather (
+    measurement_id SERIAL PRIMARY KEY,
+    timestamp TIMESTAMP NOT NULL,
+    latitude DOUBLE PRECISION,
+    longitude DOUBLE PRECISION,
+    weather_code INTEGER,
+    precipitation_probability DOUBLE PRECISION,
+    temperature DOUBLE PRECISION,
+    hour TIMESTAMP
+);
 -- CREATE TABLE bus_passenger_summary (
 --     id SERIAL PRIMARY KEY,
 --     stop_id TEXT NOT NULL,
