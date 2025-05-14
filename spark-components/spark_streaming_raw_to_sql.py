@@ -64,7 +64,7 @@ def create_spark_session():
         raise
 
 def read_kafka_stream(spark, topic, schema):
-    """Read from Kafka and parse JSON data"""
+    """Read from Kafka and parse JSON data returning a timestamped stream"""
     try:
         kafka_options = {
             "kafka.bootstrap.servers": KAFKA_BOOTSTRAP_SERVERS,
@@ -78,24 +78,24 @@ def read_kafka_stream(spark, topic, schema):
             "kafka.session.timeout.ms": "60000"
         }
         
-        print(f"\nDEBUG: Connecting to Kafka topic {topic} with options:")
-        print(kafka_options)
+        # print(f"\nDEBUG: Connecting to Kafka topic {topic} with options:")
+        # print(kafka_options)
         
         raw_stream = spark.readStream \
             .format("kafka") \
             .options(**kafka_options) \
             .load()
         
-        print(f"\nDEBUG: Raw Kafka stream schema for {topic}:")
-        raw_stream.printSchema()
+        # print(f"\nDEBUG: Raw Kafka stream schema for {topic}:")
+        # raw_stream.printSchema()
         
         parsed_stream = raw_stream \
             .selectExpr("CAST(value AS STRING)") \
             .select(from_json("value", schema).alias("data")) \
             .select("data.*")
         
-        print(f"\nDEBUG: Parsed stream schema for {topic}:")
-        parsed_stream.printSchema()
+        # print(f"\nDEBUG: Parsed stream schema for {topic}:")
+        # parsed_stream.printSchema()
         
         timestamped_stream = parsed_stream \
             .withColumn("timestamp", to_timestamp("timestamp"))
@@ -114,7 +114,7 @@ def write_to_postgres(batch_df, batch_id, table_name):
         return
 
     try:
-        print(f"\nDEBUG: Processing batch {batch_id}")
+        # print(f"\nDEBUG: Processing batch {batch_id}")
         row_count = batch_df.count()
         print(f"Number of records: {row_count}")
         
