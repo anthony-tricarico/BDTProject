@@ -69,7 +69,7 @@ def get_passengers():
                 bus_active_list.append(bus_deactive_list.pop())
             # get smaller dataset of unique trip
             # for testing does not include null shape ids
-            for _, row in df[(df['trip_id'] == trip_id) & ~(df['shape_id'].isna()) & (df['route_short_name'].isin(["5"]))].iterrows():
+            for _, row in df[(df['trip_id'] == trip_id) & ~(df['shape_id'].isna()) & (df['route_short_name'].isin(["5", "8"]))].iterrows():
                 # extract relevant information for each row wich corresponds to a stop
                 shape_id = row.loc['shape_id']
                 trip_idx = trip_id

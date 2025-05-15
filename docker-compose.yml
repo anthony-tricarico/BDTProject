@@ -51,7 +51,10 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-
+  redis:
+    image: redis:6
+    ports:
+      - "6379:6379"
   kafka-producer-passengers:
     build:
       context: ./kafka-components

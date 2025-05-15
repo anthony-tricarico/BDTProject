@@ -39,7 +39,8 @@ try:
         trip_id VARCHAR,
         traffic_level VARCHAR,
         normal INTEGER,
-        traffic INTEGER
+        traffic INTEGER,
+        shape_id VARCHAR
     )
     """)
     conn.commit()
@@ -53,8 +54,8 @@ def update_traffic_table(traffic_data):
         # Insert traffic data
         cur.execute("""
             INSERT INTO traffic 
-            (measurement_id, timestamp, stop_id, route, bus_id, trip_id, traffic_level, normal, traffic)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            (measurement_id, timestamp, stop_id, route, bus_id, trip_id, traffic_level, normal, traffic, shape_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (measurement_id) DO NOTHING
         """, (
             traffic_data['measurement_id'],
@@ -65,7 +66,8 @@ def update_traffic_table(traffic_data):
             traffic_data['trip_id'],
             traffic_data['traffic_level'],
             traffic_data['normal'],
-            traffic_data['traffic']
+            traffic_data['traffic'],
+            traffic_data['shape_id']
         ))
         conn.commit()
         print(f"Traffic data inserted: {traffic_data['measurement_id']}")

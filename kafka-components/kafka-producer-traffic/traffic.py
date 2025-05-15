@@ -10,54 +10,101 @@ from dotenv import load_dotenv
 from utils.db_connect import create_db_connection
 from utils.kafka_producer import create_kafka_producer
 from collections import deque
-import time
+import redis
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_result
+
+class RateLimitException(Exception):
+    pass
+
+def is_rate_limit_error(result):
+    # If API response is returned but shows over-query
+    if isinstance(result, dict) and result.get("status") == "OVER_QUERY_LIMIT":
+        return True
+    return False
+
+def is_stale_or_limited_result(data):
+    if not isinstance(data, dict):
+        return False
+    if data.get("status") == "OVER_QUERY_LIMIT":
+        return True
+    try:
+        routes = data.get("routes", [])
+        if routes:
+            duration = routes[0]["legs"][0]["duration"]["value"]
+            # Add a heuristic: if it's always ~same low value, consider it stale
+            if duration < 120:  # less than 2 minutes
+                print(f"[RETRY] Duration too low: {duration}")
+                return True
+    except Exception:
+        return False
+    return False
+
+# Connect to Redis (adjust hostname as needed)
+redis_client = redis.Redis(host='redis', port=6379, db=0)
+
+def enforce_redis_rate_limit(max_requests_per_second=9, window_seconds=1):
+    key = "api_request_timestamps"
+    now = int(time.time() * 1000)  # current time in ms
+    window_start = now - (window_seconds * 1000)
+
+    # Remove old entries
+    redis_client.zremrangebyscore(key, 0, window_start)
+
+    # Count current entries in the window
+    current_count = redis_client.zcard(key)
+    if current_count >= max_requests_per_second:
+        oldest = redis_client.zrange(key, 0, 0, withscores=True)[0][1]
+        sleep_ms = (oldest + window_seconds * 1000) - now
+        sleep_s = sleep_ms / 1000
+        print(f"[RedisRateLimit] Sleeping for {sleep_s:.2f}s", flush=True)
+        time.sleep(sleep_s)
+
+    # Add current timestamp
+    redis_client.zadd(key, {str(now): now})
 
 load_dotenv()
-# Keeps timestamps of recent API calls
 recent_requests = deque()
 
-def enforce_rate_limit(max_requests_per_second: int = 9):
-    current_time = time.time()
+@retry(
+    stop=stop_after_attempt(5),
+    wait=wait_exponential(multiplier=1, min=1, max=30),
+    retry=retry_if_result(is_stale_or_limited_result)
+)
+def fetch_with_retry_decorator(url):
+    try:
+        print(f"[API CALL] Requesting URL: {url}")
+        response = requests.get(url, timeout=10)
 
-    # Remove old timestamps
-    while recent_requests and current_time - recent_requests[0] > 1:
-        recent_requests.popleft()
+        print(f"[API RESPONSE] Status code: {response.status_code}")
 
-    if len(recent_requests) >= max_requests_per_second:
-        sleep_duration = 1 - (current_time - recent_requests[0])
-        print(f"[RateLimit] Sleeping {sleep_duration:.2f}s to avoid QPS limit.", flush=True)
-        time.sleep(sleep_duration)
+        if response.status_code == 429:
+            print("[API RESPONSE] Rate limited with 429 status code")
+            raise RateLimitException("HTTP 429: Rate limit hit")
 
-    recent_requests.append(time.time())
-    print(f"[RateLimit] Request allowed at {time.strftime('%H:%M:%S')}, {len(recent_requests)} in last 1s", flush=True)
+        if response.status_code != 200:
+            print(f"[API ERROR] Unexpected HTTP status: {response.status_code}")
+            raise Exception(f"Unexpected HTTP code {response.status_code}")
 
-def fetch_with_retries(url, retries=3, base_delay=1.0):
-    """
-    Fetches the URL with retries and exponential backoff.
-    """
-    for attempt in range(1, retries + 1):
-        try:
-            response = requests.get(url, timeout=5)
-            if response.status_code == 200:
-                data = response.json()
-                # Handle Google-specific rate limiting or issues
-                if data.get("status") == "OVER_QUERY_LIMIT":
-                    print("[API] OVER_QUERY_LIMIT from Google API", flush=True)
-                    raise Exception("Rate limit hit")
-                return data
-            else:
-                print(f"[API] HTTP {response.status_code} on attempt {attempt}", flush=True)
-        except Exception as e:
-            delay = base_delay * (2 ** (attempt - 1))
-            print(f"[Retry] Attempt {attempt} failed: {e}. Retrying in {delay:.1f}s...", flush=True)
-            time.sleep(delay)
-    
-    print("[Retry] All attempts failed, skipping this request.", flush=True)
-    return None
+        # Print a snippet of the response text for debugging
+        print(f"[API RESPONSE] Body snippet: {response.text[:200]}")
+
+        data = response.json()
+
+        if data.get("status") == "OVER_QUERY_LIMIT":
+            print("[API] OVER_QUERY_LIMIT from API response, triggering retry")
+            return data  # triggers retry via is_stale_or_limited_result
+
+        return data
+
+    except RateLimitException:
+        # To trigger tenacity retry on 429 errors
+        raise
+    except Exception as e:
+        print(f"[Retry Exception] {e}")
+        raise
 
 SLEEP = float(os.getenv("SLEEP", "1"))
 print("SLEEP is set to:", SLEEP, flush=True)
-# read API KEY from .env file
 GOOGLE_API_KEY = str(os.getenv("GOOGLE_API_KEY", None))
 
 def build_get_traffic(destinations: tuple, origins: tuple, key: str, departure_time: str ='now'):
@@ -66,7 +113,6 @@ def build_get_traffic(destinations: tuple, origins: tuple, key: str, departure_t
 
 def generate_traffic(msg, traffic_level, normal_time, traffic_time):
     measurement_id = f"{msg['stop_id']}-{msg['route']}-{msg['timestamp']}-{random.randint(1000, 9999)}"
-    
     return {
         "measurement_id": str(measurement_id),
         "timestamp": msg['timestamp'],
@@ -76,8 +122,8 @@ def generate_traffic(msg, traffic_level, normal_time, traffic_time):
         "trip_id": msg['trip_id'],
         "traffic_level": traffic_level,
         "normal": normal_time,
-        "traffic": traffic_time
-
+        "traffic": traffic_time,
+        "shape_id": msg['shape_id']
     }
 
 def unique_shapes():
@@ -89,7 +135,6 @@ def unique_shapes():
         )
     for row in result:
         shapes.append(row[0])
-
     return shapes
 
 shapes_unique = unique_shapes()
@@ -101,7 +146,6 @@ def process_passenger_predictions(key: str = GOOGLE_API_KEY):
     global all_coordinates
     global tried_shapes
     
-    # Create Kafka consumer for passenger predictions
     consumer = None
     while consumer is None:
         try:
@@ -117,12 +161,9 @@ def process_passenger_predictions(key: str = GOOGLE_API_KEY):
             print(f"Kafka not ready, retrying in 3 seconds... ({e})")
             time.sleep(3)
     
-    # Process messages from Kafka    
     for message in consumer:
-        print(f"DEBUG: number of unique shapes {len(shapes_unique)}")
         try:
             msg = message.value
-            
             shape_id = msg.get("shape_id")
             timestamp = msg.get('timestamp')
 
@@ -165,11 +206,12 @@ def process_passenger_predictions(key: str = GOOGLE_API_KEY):
             destinations = all_coordinates[-1]
 
             req = build_get_traffic(destinations, origins, key, timestamp_converted)
-            enforce_rate_limit(9)  # Stay under the 10 QPS limit
-            api_response = fetch_with_retries(req)
-
+            enforce_redis_rate_limit(9)
+            api_response = fetch_with_retry_decorator(req)
+            
             if api_response is None:
-                continue  # skip this iteration due to failed request
+                print("[API] No response data, skipping")
+                continue
 
             try:
                 element = api_response['rows'][0]['elements'][0]
