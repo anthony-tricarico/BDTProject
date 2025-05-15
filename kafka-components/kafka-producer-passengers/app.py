@@ -54,7 +54,12 @@ def get_passengers():
     # real_start = time.time()
     while True:
         # for each trip_id get stop and route, and assign one unique bus to the trip 
+        
         for trip_id in unique_trip_ids:
+            # max_sequence = str(df[df['trip_id'] == trip_id]['stop_sequence'].max())
+            # cur_on = 0
+            # cur_off = 0
+            # on_bus = 0
             try:
                 bus_active_list.append(bus_deactive_list.pop())
             except:
@@ -71,7 +76,7 @@ def get_passengers():
                 timestamp = row.loc['arrival_time']
                 route = row.loc['route_short_name']
                 stop = row.loc['stop_id'] 
-                sequence = row.loc['stop_sequence']
+                sequence = str(row.loc['stop_sequence'])
 
                 sim_time = app_start + pd.to_timedelta(timestamp)
                 seconds = (sim_time - sim_time.replace(hour=0, minute=0, second=0)).total_seconds()
@@ -80,10 +85,22 @@ def get_passengers():
                     'stop_id': [stop],
                     'encoded_routes': [le.transform([str(route)])[0]]
                 })
-
+                
                 # Ensure the prediction is not negative
+                # if int(sequence) != int(max_sequence):
                 passenger_in = max(0, int(model.predict(data_x)[0]) - 10)
                 passenger_out = max(0, int(model_out.predict(data_x)[0]))
+                # cur_on += passenger_in
+                # cur_off += passenger_out
+                # on_bus += (cur_on - cur_off)
+                # cur_on = 0
+                # cur_off = 0
+                # else:
+                #     # passenger_in = max(0, int(model.predict(data_x)[0]) - 10)
+                #     passenger_in = 0
+                #     passenger_out = on_bus
+                #     on_bus -= passenger_out
+
 
                 payload = {
                     'prediction_id': pred_id,
@@ -96,7 +113,8 @@ def get_passengers():
                     'shape_id': str(shape_id),
                     'trip_id': str(trip_idx),
                     'stop_sequence': str(sequence),
-                    'bus_id': int(bus_active_list[-1])
+                    'bus_id': int(bus_active_list[-1]),
+                    # 'on_bus': on_bus
                 }
                 print("Sending:", payload)
                 producer.send('bus.passenger.predictions', value=payload)

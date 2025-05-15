@@ -60,7 +60,7 @@ services:
       - kafka
       - db
     environment:
-      - SLEEP=0
+      - SLEEP=1
 
   kafka-consumer-passengers:
     build:
@@ -192,3 +192,20 @@ services:
       - DB_HOST=db
       - DB_PORT=5432
       - DB_PASSWORD=example
+
+  kafka-consumer-traffic:
+    build:
+      context: ./kafka-components
+      dockerfile: ./kafka-consumer-traffic/Dockerfile
+    depends_on:
+      - kafka
+      - kafka-producer-traffic
+
+  kafka-consumer-gps:
+    build:
+      context: ./kafka-components
+      dockerfile: ./kafka-consumer-gps/Dockerfile
+    depends_on:
+      - kafka
+      - kafka-consumer-passengers
+      - kafka-producer-gps
