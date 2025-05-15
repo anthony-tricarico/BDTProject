@@ -9,8 +9,51 @@ from datetime import datetime
 from dotenv import load_dotenv
 from utils.db_connect import create_db_connection
 from utils.kafka_producer import create_kafka_producer
+from collections import deque
+import time
 
 load_dotenv()
+# Keeps timestamps of recent API calls
+recent_requests = deque()
+
+def enforce_rate_limit(max_requests_per_second: int = 9):
+    current_time = time.time()
+
+    # Remove old timestamps
+    while recent_requests and current_time - recent_requests[0] > 1:
+        recent_requests.popleft()
+
+    if len(recent_requests) >= max_requests_per_second:
+        sleep_duration = 1 - (current_time - recent_requests[0])
+        print(f"[RateLimit] Sleeping {sleep_duration:.2f}s to avoid QPS limit.", flush=True)
+        time.sleep(sleep_duration)
+
+    recent_requests.append(time.time())
+    print(f"[RateLimit] Request allowed at {time.strftime('%H:%M:%S')}, {len(recent_requests)} in last 1s", flush=True)
+
+def fetch_with_retries(url, retries=3, base_delay=1.0):
+    """
+    Fetches the URL with retries and exponential backoff.
+    """
+    for attempt in range(1, retries + 1):
+        try:
+            response = requests.get(url, timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                # Handle Google-specific rate limiting or issues
+                if data.get("status") == "OVER_QUERY_LIMIT":
+                    print("[API] OVER_QUERY_LIMIT from Google API", flush=True)
+                    raise Exception("Rate limit hit")
+                return data
+            else:
+                print(f"[API] HTTP {response.status_code} on attempt {attempt}", flush=True)
+        except Exception as e:
+            delay = base_delay * (2 ** (attempt - 1))
+            print(f"[Retry] Attempt {attempt} failed: {e}. Retrying in {delay:.1f}s...", flush=True)
+            time.sleep(delay)
+    
+    print("[Retry] All attempts failed, skipping this request.", flush=True)
+    return None
 
 SLEEP = float(os.getenv("SLEEP", "1"))
 print("SLEEP is set to:", SLEEP, flush=True)
@@ -76,6 +119,7 @@ def process_passenger_predictions(key: str = GOOGLE_API_KEY):
     
     # Process messages from Kafka    
     for message in consumer:
+        print(f"DEBUG: number of unique shapes {len(shapes_unique)}")
         try:
             msg = message.value
             
@@ -121,7 +165,11 @@ def process_passenger_predictions(key: str = GOOGLE_API_KEY):
             destinations = all_coordinates[-1]
 
             req = build_get_traffic(destinations, origins, key, timestamp_converted)
-            api_response = requests.get(req).json()
+            enforce_rate_limit(9)  # Stay under the 10 QPS limit
+            api_response = fetch_with_retries(req)
+
+            if api_response is None:
+                continue  # skip this iteration due to failed request
 
             try:
                 element = api_response['rows'][0]['elements'][0]
