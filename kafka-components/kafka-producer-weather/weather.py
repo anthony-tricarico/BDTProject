@@ -33,7 +33,7 @@ def generate_weather(weather_data: dict, timestamp) -> dict:
 
 producer = create_kafka_producer()
 
-WEATHER_REQUEST = 'https://api.open-meteo.com/v1/forecast?latitude=46.0679&longitude=11.1211&hourly=temperature_2m,precipitation_probability,rain,showers,snowfall,snow_depth,weather_code&forecast_days=1'
+WEATHER_REQUEST = 'https://api.open-meteo.com/v1/forecast?latitude=46.0679&longitude=11.1211&hourly=temperature_2m,precipitation_probability,rain,showers,snowfall,snow_depth,weather_code&forecast_days=3'
 
 MAX_TIMESTAMP = 60*60*6 # every 6 hours make new request to open-meteo API
 def process_passenger_predictions():

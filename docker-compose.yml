@@ -81,7 +81,7 @@ services:
       - kafka
       - kafka-consumer-passengers # for dependency on stream API data for passengers
     environment:
-      - SLEEP=0.5
+      - SLEEP=0
 
   kafka-consumer-tickets:
     build:
@@ -102,7 +102,7 @@ services:
       - kafka
       - kafka-consumer-passengers
     environment:
-      - SLEEP=0.5
+      - SLEEP=0
 
   kafka-consumer-sensors:
     build:
@@ -132,7 +132,7 @@ services:
       - kafka-consumer-passengers
       - db
     environment:
-      - SLEEP=0.5
+      - SLEEP=0
     restart: no
 
   kafka-producer-traffic:
@@ -144,7 +144,7 @@ services:
       - kafka-consumer-passengers
       - db
     environment:
-      - SLEEP=0.5
+      - SLEEP=0
     restart: no
 
   kafka-producer-weather:
@@ -156,7 +156,7 @@ services:
       - kafka-consumer-passengers
       - db
     environment:
-      - SLEEP=0.5
+      - SLEEP=0
     restart: no
 
   kafka-consumer-weather:

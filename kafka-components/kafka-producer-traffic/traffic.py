@@ -1,4 +1,5 @@
 import random
+import requests
 import json
 import time
 from kafka import KafkaConsumer, KafkaProducer

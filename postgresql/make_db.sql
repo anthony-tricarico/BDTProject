@@ -56,7 +56,9 @@ CREATE TABLE IF NOT EXISTS events (
 	day_event DATE,
 	start_time TIME,
 	end_time TIME,
-	location_event VARCHAR(120) 
+	location_event VARCHAR(120),
+	latitude FLOAT,
+	longitude FLOAT 
 );
 
 CREATE TABLE IF NOT EXISTS weather (
@@ -129,7 +131,7 @@ FROM '/docker-entrypoint-initdb.d/trentino_trasporti/buses.csv'
 DELIMITER ','
 CSV HEADER;
 
-COPY events (event_id,event_name,day_event,start_time,end_time,location_event)
-FROM '/docker-entrypoint-initdb.d/trentino_trasporti/events.csv'
-DELIMITER ','
+COPY events (event_id,event_name,day_event,start_time,end_time,location_event,latitude,longitude)
+FROM '/docker-entrypoint-initdb.d/trentino_trasporti/trento_events.csv'
+DELIMITER ';'
 CSV HEADER;
