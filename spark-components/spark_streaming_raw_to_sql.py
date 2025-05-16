@@ -25,7 +25,11 @@ TICKET_SCHEMA = StructType([
     StructField("passenger_type", StringType(), True),
     StructField("fare", DoubleType(), True),
     StructField("bus_id", IntegerType(), True),
-    StructField("trip_id", StringType(), True)
+    StructField("trip_id", StringType(), True),
+    StructField("peak_hour", IntegerType(), True),
+    # StructField("event", StringType(), True),
+    StructField("hospital", IntegerType(), True), 
+    StructField("school", IntegerType(), True)
 ])
 
 SENSOR_SCHEMA = StructType([
@@ -36,7 +40,11 @@ SENSOR_SCHEMA = StructType([
     StructField("status", IntegerType(), True),
     StructField("activation_type", IntegerType(), True),
     StructField("bus_id", IntegerType(), True),
-    StructField("trip_id", StringType(), True)
+    StructField("trip_id", StringType(), True),
+    StructField("peak_hour", IntegerType(), True),
+    # StructField("event", StringType(), True),
+    StructField("hospital", IntegerType(), True), 
+    StructField("school", IntegerType(), True)
 ])
 
 def create_spark_session():

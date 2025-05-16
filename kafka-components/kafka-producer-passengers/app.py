@@ -66,6 +66,10 @@ def get_passengers():
                 route = row.loc['route_short_name']
                 stop = row.loc['stop_id'] 
                 sequence = str(row.loc['stop_sequence'])
+                peak_hour = row.loc['peak_hour']
+                event = row.loc['event']
+                hospital = row.loc['hospital']
+                school = row.loc['school']
 
                 sim_time = app_start + pd.to_timedelta(timestamp)
                 weekend = 1 if sim_time.weekday() >= 5 else 0
@@ -97,7 +101,11 @@ def get_passengers():
                     'stop_sequence': str(sequence),
                     # always get the last appended bus to the list as the currently active one for this specific trip
                     'bus_id': int(bus_active_list[-1]),
-                    "weekend": weekend
+                    "weekend": weekend,
+                    "peak_hour": peak_hour,
+                    # "event": event,
+                    "hospital": hospital,
+                    "school": school
                 }
 
                 print("Sending:", payload)

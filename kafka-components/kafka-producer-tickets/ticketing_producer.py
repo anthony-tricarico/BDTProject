@@ -34,7 +34,11 @@ def generate_ticket(msg):
         "passenger_type": passenger_type,
         "fare": fare,
         "bus_id": msg['bus_id'],
-        "trip_id": msg['trip_id']
+        "trip_id": msg['trip_id'],
+        "peak_hour": msg['peak_hour'],
+        # "event": msg['event'],
+        "hospital": msg['hospital'],
+        "school": msg['school']
     }
 
     # return {

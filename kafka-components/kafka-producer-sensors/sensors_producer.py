@@ -26,7 +26,11 @@ def generate_sensors(msg):
         "status": 1,
         "activation_type": 2,
         "bus_id": msg['bus_id'],
-        "trip_id": msg['trip_id']
+        "trip_id": msg['trip_id'],
+        "peak_hour": msg['peak_hour'],
+        # "event": msg['event'],
+        "hospital": msg['hospital'],
+        "school": msg['school']
     }
 
 def process_passenger_predictions():
