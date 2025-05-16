@@ -14,11 +14,6 @@ from utils.kafka_producer import create_kafka_producer
 SLEEP = os.getenv("SLEEP")
 
 def get_passengers():
-    # global pred_id
-    # global bus_deactive_list
-    # global max_buses
-    # global bus_active_list
-    # global app_start
 
     with open("treemodel.pkl", "rb") as f:
         model = load(f)
@@ -39,7 +34,7 @@ def get_passengers():
     
     producer = create_kafka_producer()
 
-    app_start = (datetime.today() + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)# app_start = datetime(2025, 1, 1, 0, 0, 0)
+    app_start = (datetime.today() + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0) # always start on day after the current one
 
     pred_id = 0
 
@@ -51,15 +46,9 @@ def get_passengers():
     random.shuffle(bus_deactive_list)
     bus_active_list = []
 
-    # real_start = time.time()
     while True:
         # for each trip_id get stop and route, and assign one unique bus to the trip 
-        
         for trip_id in unique_trip_ids:
-            # max_sequence = str(df[df['trip_id'] == trip_id]['stop_sequence'].max())
-            # cur_on = 0
-            # cur_off = 0
-            # on_bus = 0
             try:
                 bus_active_list.append(bus_deactive_list.pop())
             except:
@@ -80,6 +69,8 @@ def get_passengers():
 
                 sim_time = app_start + pd.to_timedelta(timestamp)
                 seconds = (sim_time - sim_time.replace(hour=0, minute=0, second=0)).total_seconds()
+                
+                # create dataframe to feed data into the model to output predictions
                 data_x = pd.DataFrame({
                     'arrival_time': [seconds],
                     'stop_id': [stop],
@@ -90,17 +81,6 @@ def get_passengers():
                 # if int(sequence) != int(max_sequence):
                 passenger_in = max(0, int(model.predict(data_x)[0]) - 10)
                 passenger_out = max(0, int(model_out.predict(data_x)[0]))
-                # cur_on += passenger_in
-                # cur_off += passenger_out
-                # on_bus += (cur_on - cur_off)
-                # cur_on = 0
-                # cur_off = 0
-                # else:
-                #     # passenger_in = max(0, int(model.predict(data_x)[0]) - 10)
-                #     passenger_in = 0
-                #     passenger_out = on_bus
-                #     on_bus -= passenger_out
-
 
                 payload = {
                     'prediction_id': pred_id,
@@ -113,8 +93,8 @@ def get_passengers():
                     'shape_id': str(shape_id),
                     'trip_id': str(trip_idx),
                     'stop_sequence': str(sequence),
-                    'bus_id': int(bus_active_list[-1]),
-                    # 'on_bus': on_bus
+                    # always get the last appended bus to the list as the currently active one for this specific trip
+                    'bus_id': int(bus_active_list[-1])
                 }
                 print("Sending:", payload)
                 producer.send('bus.passenger.predictions', value=payload)
@@ -122,7 +102,6 @@ def get_passengers():
                 time.sleep(float(SLEEP))
 
         app_start = app_start + timedelta(days=1) 
-
 
 if __name__ == "__main__":
     get_passengers()
