@@ -38,7 +38,7 @@ def get_passengers():
 
     pred_id = 0
 
-    df = pd.read_csv('stop_times_passengers_shapes.csv')
+    df = pd.read_csv('passengers_with_shapes.csv')
     unique_trip_ids = list(df['trip_id'].unique())
 
     bus_deactive_list = [i for i in range(1, max_buses+1)]
@@ -62,24 +62,26 @@ def get_passengers():
                 # extract relevant information for each row wich corresponds to a stop
                 shape_id = row.loc['shape_id']
                 trip_idx = trip_id
-                timestamp = row.loc['arrival_time']
+                timestamp = row.loc['departure_time_obj']
                 route = row.loc['route_short_name']
                 stop = row.loc['stop_id'] 
                 sequence = str(row.loc['stop_sequence'])
 
                 sim_time = app_start + pd.to_timedelta(timestamp)
+                weekend = 1 if sim_time.weekday() >= 5 else 0
                 seconds = (sim_time - sim_time.replace(hour=0, minute=0, second=0)).total_seconds()
                 
                 # create dataframe to feed data into the model to output predictions
                 data_x = pd.DataFrame({
                     'arrival_time': [seconds],
                     'stop_id': [stop],
-                    'encoded_routes': [le.transform([str(route)])[0]]
+                    'encoded_routes': [le.transform([str(route)])[0]],
+                    'weekend': [weekend]
                 })
                 
                 # Ensure the prediction is not negative
                 # if int(sequence) != int(max_sequence):
-                passenger_in = max(0, int(model.predict(data_x)[0]) - 10)
+                passenger_in = max(0, int(model.predict(data_x)[0]))
                 passenger_out = max(0, int(model_out.predict(data_x)[0]))
 
                 payload = {
@@ -94,8 +96,10 @@ def get_passengers():
                     'trip_id': str(trip_idx),
                     'stop_sequence': str(sequence),
                     # always get the last appended bus to the list as the currently active one for this specific trip
-                    'bus_id': int(bus_active_list[-1])
+                    'bus_id': int(bus_active_list[-1]),
+                    "weekend": weekend
                 }
+
                 print("Sending:", payload)
                 producer.send('bus.passenger.predictions', value=payload)
                 pred_id += 1
