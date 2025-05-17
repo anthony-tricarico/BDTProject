@@ -63,7 +63,7 @@ services:
       - kafka
       - db
     environment:
-      - SLEEP=0
+      - SLEEP=2
 
   kafka-consumer-passengers:
     build:
@@ -212,3 +212,22 @@ services:
       - kafka
       - kafka-consumer-passengers
       - kafka-producer-gps
+
+  spark-feature-engineering:
+    build:
+      context: ./spark-feature-engineering
+    container_name: spark-feature-engineering
+    depends_on:
+      - db
+      - spark-streaming
+    environment:
+      - PYTHONUNBUFFERED=1
+      # Add any other env vars you need
+    command: >
+      spark-submit
+      --master local[*]
+      --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.postgresql:postgresql:42.7.1
+      /app/feature_engineering.py
+    # volumes:
+    #   - ./spark-feature-engineering:/app
+    restart: "no"

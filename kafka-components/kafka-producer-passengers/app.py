@@ -46,6 +46,8 @@ def get_passengers():
     random.shuffle(bus_deactive_list)
     bus_active_list = []
 
+    # max_passengers_per_trip = 100  # Cap for each trip
+
     while True:
         # for each trip_id get stop and route, and assign one unique bus to the trip 
         for trip_id in unique_trip_ids:
@@ -58,8 +60,10 @@ def get_passengers():
                 bus_active_list.append(bus_deactive_list.pop())
             # get smaller dataset of unique trip
             # for testing does not include null shape ids
+            running_in = 0
+            running_out = 0
             for _, row in df[(df['trip_id'] == trip_id) & ~(df['shape_id'].isna()) & (df['route_short_name'].isin(["5", "8"]))].iterrows():
-                # extract relevant information for each row wich corresponds to a stop
+                # extract relevant information for each row which corresponds to a stop
                 shape_id = row.loc['shape_id']
                 trip_idx = trip_id
                 timestamp = row.loc['departure_time_obj']
@@ -67,9 +71,11 @@ def get_passengers():
                 stop = row.loc['stop_id'] 
                 sequence = str(row.loc['stop_sequence'])
                 peak_hour = row.loc['peak_hour']
-                event = row.loc['event']
+                # event = row.loc['event']
                 hospital = row.loc['hospital']
                 school = row.loc['school']
+                passenger_in = row.loc['passengers']
+                passenger_out = row.loc['passengers_out']
 
                 sim_time = app_start + pd.to_timedelta(timestamp)
                 weekend = 1 if sim_time.weekday() >= 5 else 0
@@ -78,15 +84,28 @@ def get_passengers():
                 # create dataframe to feed data into the model to output predictions
                 data_x = pd.DataFrame({
                     'arrival_time': [seconds],
-                    'stop_id': [stop],
+                    # 'stop_id': [stop],
                     'encoded_routes': [le.transform([str(route)])[0]],
-                    'weekend': [weekend]
+                    'weekend': [weekend],
+                    'peak_hour': [peak_hour]
                 })
                 
                 # Ensure the prediction is not negative
-                # if int(sequence) != int(max_sequence):
-                passenger_in = max(0, int(model.predict(data_x)[0]))
-                passenger_out = max(0, int(model_out.predict(data_x)[0]))
+                passenger_in = min(max(0, int(model.predict(data_x)[0])), 8)
+                passenger_out = max(max(0, int(model_out.predict(data_x)[0])), 2)
+
+                # # --- Cap so we don't exceed the max for the trip ---
+                # if running_in + passenger_in > max_passengers_per_trip:
+                #     passenger_in = max_passengers_per_trip - running_in
+                # if running_out + passenger_out > max_passengers_per_trip:
+                #     passenger_out = max_passengers_per_trip - running_out
+
+                # # Don't allow negative predictions after capping
+                # passenger_in = max(0, passenger_in)
+                # passenger_out = max(0, passenger_out)
+
+                # running_in += passenger_in
+                # running_out += passenger_out
 
                 payload = {
                     'prediction_id': pred_id,
