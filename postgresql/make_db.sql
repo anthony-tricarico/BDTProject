@@ -71,6 +71,26 @@ CREATE TABLE IF NOT EXISTS weather (
     temperature DOUBLE PRECISION,
     hour TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS feature_table (
+	trip_id_x VARCHAR,
+	timestamp_x TIMESTAMP,
+	peak_hour SMALLINT,
+	seconds_from_midnight BIGINT,
+	temperature FLOAT,
+	precipitation_probability FLOAT,
+	weather_code SMALLINT,
+	traffic_level VARCHAR,
+	event_dummy SMALLINT,
+	congestion_rate FLOAT,
+	school SMALLINT,
+	hospital SMALLINT
+);
+
+ALTER TABLE feature_table
+ADD CONSTRAINT unique_trip_timestamp
+UNIQUE (trip_id_x, timestamp_x);
+
 -- CREATE TABLE bus_passenger_summary (
 --     id SERIAL PRIMARY KEY,
 --     stop_id TEXT NOT NULL,
