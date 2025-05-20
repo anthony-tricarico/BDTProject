@@ -1,16 +1,11 @@
 services:
   db:
     build:
-      # sets where the docker engine will go look for resources to build this image
-      # this includes also looking for data.
       context: ./postgresql
-    # originally set to "always" so that everytime the docker daemon is restarted this is rerun automatically and the container starts automatically
     restart: no
     shm_size: 128mb
     environment:
-      # sets password
       POSTGRES_PASSWORD: example
-      # declares name of the database
       POSTGRES_DB: raw_data
       # declares port-binding from port 5432 in the container
       # to 5432 on the host system
@@ -248,6 +243,18 @@ services:
       kafka:
         condition: service_started
       ml-model:
+        condition: service_started
+
+  prediction-service:
+    build:
+      context: ./prediction-service
+      dockerfile: ./Dockerfile
+    ports:
+      - "8006:8006"
+    depends_on:
+      minio:
+        condition: service_healthy
+      kafka-consumer-model:
         condition: service_started
 
 volumes:

@@ -217,8 +217,8 @@ if __name__ == "__main__":
                     
                     # Test Kafka connection
                     producer = create_kafka_producer()
-                    producer.send("model.train.topic", value={"test": "connection"})
-                    producer.flush()
+                    # producer.send("model.train.topic", value={"test": "connection"})
+                    # producer.flush()
                     
                     print("All services are ready!")
                     break
