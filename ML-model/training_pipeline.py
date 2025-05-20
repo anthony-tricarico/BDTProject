@@ -5,13 +5,21 @@ from typing import List
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from utils.kafka_producer import create_kafka_producer
+from utils.db_connect import create_db_connection
+import time
+import joblib
+import json
+import boto3
+import io
+from minio import Minio
 
 total_seats = 90
 # --- Configuration ---
 POSTGRES_URL = "postgresql+psycopg2://postgres:example@db:5432/raw_data"
 
 # --- Load Data from PostgreSQL ---
-engine = create_engine(POSTGRES_URL)
+# engine = create_engine(POSTGRES_URL)
+engine = create_db_connection()
 
 def perform_aggregations(
     selected_features: List[str] = [
@@ -185,6 +193,8 @@ def get_accuracy_model(final_clean, rf):
     return rf.score(X_test, y_test)
 
 if __name__ == "__main__":
+    # ensure enough data is gathered before training
+    time.sleep(10)
     producer = create_kafka_producer()
 
     final_clean = perform_aggregations(selected_features=[
@@ -205,9 +215,45 @@ if __name__ == "__main__":
 
     acc = get_accuracy_model(final_clean, rf)
 
-    message = {"model_status": "model trained",
-               "accuracy": acc}
-    
-    producer.send('model.train.topic', value=message)
+    # s3 = boto3.client('s3', endpoint_url='http://minio:9000',
+    #               aws_access_key_id='minioadmin',
+    #               aws_secret_access_key='minioadmin')
 
-    # TODO: send to MINio
+    # MinIO client
+    minio_client = Minio(
+        "minio:9000",
+        access_key="minioadmin",
+        secret_key="minioadmin",
+        secure=False
+    )
+
+    # Ensure the bucket exists
+    bucket_name = "models"
+
+    if not minio_client.bucket_exists(bucket_name):
+        minio_client.make_bucket(bucket_name)
+        print(f"Created bucket: {bucket_name}")
+    else:
+        print(f"Bucket '{bucket_name}' already exists.")
+   # Save model to MinIO
+    timestamp = int(time.time())
+    model_key = f"challengers/challenger_{timestamp}.pkl"
+    model_buffer = io.BytesIO()
+    joblib.dump(rf, model_buffer)
+    model_buffer.seek(0)
+
+    minio_client.put_object(
+        "models", model_key, model_buffer, length=-1, part_size=10*1024*1024
+    )
+
+    # Send metadata to Kafka
+    producer.send("model.train.topic", {
+        "model_key": model_key,
+        "accuracy": acc,
+        "timestamp": timestamp
+    })
+
+    producer.flush()
+    producer.close()
+
+    print(f"Model sent to Kafka: {model_key} (accuracy: {acc:.4f})")

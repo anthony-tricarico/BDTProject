@@ -212,3 +212,27 @@ services:
       - kafka
       - kafka-consumer-passengers
       - kafka-producer-gps
+
+  minio:
+    image: minio/minio
+    command: server /data
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    ports:
+      - "9000:9000"
+
+  ml-model:
+    build:
+      context: ./ml-model
+      dockerfile: ./Dockerfile
+    depends_on:
+      - kafka
+      - db
+  kafka-consumer-model:
+    build:
+      context: ./kafka-components
+      dockerfile: ./kafka-consumer-model/Dockerfile
+    depends_on:
+      - kafka
+      - ml-model
