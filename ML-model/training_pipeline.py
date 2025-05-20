@@ -193,67 +193,107 @@ def get_accuracy_model(final_clean, rf):
     return rf.score(X_test, y_test)
 
 if __name__ == "__main__":
-    # ensure enough data is gathered before training
-    time.sleep(10)
-    producer = create_kafka_producer()
+    while True:  # Run indefinitely
+        try:
+            # Wait for services to be ready
+            max_retries = 10
+            retry_count = 0
+            
+            while retry_count < max_retries:
+                try:
+                    # Test database connection
+                    engine = create_db_connection()
+                    with engine as conn:
+                        conn.execute(text("SELECT 1"))
+                    
+                    # Test MinIO connection
+                    minio_client = Minio(
+                        "minio:9000",
+                        access_key="minioadmin",
+                        secret_key="minioadmin",
+                        secure=False
+                    )
+                    minio_client.list_buckets()
+                    
+                    # Test Kafka connection
+                    producer = create_kafka_producer()
+                    producer.send("model.train.topic", value={"test": "connection"})
+                    producer.flush()
+                    
+                    print("All services are ready!")
+                    break
+                except Exception as e:
+                    retry_count += 1
+                    print(f"Service not ready (attempt {retry_count}/{max_retries}): {e}")
+                    if retry_count == max_retries:
+                        raise Exception("Failed to connect to required services")
+                    time.sleep(5)
 
-    final_clean = perform_aggregations(selected_features=[
-        'trip_id_x' ,'timestamp_x', 'peak_hour', 'seconds_from_midnight',
-        'temperature', 'precipitation_probability', 'weather_code',
-        'traffic_level', 'event_dummy', 'congestion_rate', 'school', 'hospital'
-    ])
+            # Run the training pipeline
+            print("\nStarting new training cycle...")
+            final_clean = perform_aggregations(selected_features=[
+                'trip_id_x' ,'timestamp_x', 'peak_hour', 'seconds_from_midnight',
+                'temperature', 'precipitation_probability', 'weather_code',
+                'traffic_level', 'event_dummy', 'congestion_rate', 'school', 'hospital'
+            ])
 
-    # print(final_clean.columns)
+            final_clean = final_clean.drop_duplicates(subset=['trip_id_x', 'timestamp_x'])
+            write_to_sql(final_clean)
+            rf = train_rf_model(final_clean)
+            acc = get_accuracy_model(final_clean, rf)
 
-    final_clean = final_clean.drop_duplicates(subset=['trip_id_x', 'timestamp_x'])
+            # Save model to MinIO
+            minio_client = Minio(
+                "minio:9000",
+                access_key="minioadmin",
+                secret_key="minioadmin",
+                secure=False
+            )
 
-    # enforce_unique()
+            bucket_name = "models"
+            if not minio_client.bucket_exists(bucket_name):
+                minio_client.make_bucket(bucket_name)
+                print(f"Created bucket: {bucket_name}")
+            else:
+                print(f"Bucket '{bucket_name}' already exists.")
 
-    write_to_sql(final_clean)
+            timestamp = int(time.time())
+            model_key = f"challengers/challenger_{timestamp}.pkl"
+            model_buffer = io.BytesIO()
+            joblib.dump(rf, model_buffer)
+            model_buffer.seek(0)
 
-    rf = train_rf_model(final_clean)
+            minio_client.put_object(
+                "models", model_key, model_buffer, length=-1, part_size=10*1024*1024
+            )
 
-    acc = get_accuracy_model(final_clean, rf)
+            # Send metadata to Kafka
+            try:
+                message = {
+                    "model_key": model_key,
+                    "accuracy": float(acc),
+                    "timestamp": timestamp
+                }
+                print(f"Attempting to send message to Kafka: {message}")
+                future = producer.send("model.train.topic", value=message)
+                record_metadata = future.get(timeout=10)
+                print(f"Message sent successfully to partition {record_metadata.partition} at offset {record_metadata.offset}")
+                producer.flush()
+                print(f"Producer flushed successfully")
+            except Exception as e:
+                print(f"Error sending to Kafka: {e}")
+                raise
+            finally:
+                print("Closing producer...")
+                producer.close()
 
-    # s3 = boto3.client('s3', endpoint_url='http://minio:9000',
-    #               aws_access_key_id='minioadmin',
-    #               aws_secret_access_key='minioadmin')
-
-    # MinIO client
-    minio_client = Minio(
-        "minio:9000",
-        access_key="minioadmin",
-        secret_key="minioadmin",
-        secure=False
-    )
-
-    # Ensure the bucket exists
-    bucket_name = "models"
-
-    if not minio_client.bucket_exists(bucket_name):
-        minio_client.make_bucket(bucket_name)
-        print(f"Created bucket: {bucket_name}")
-    else:
-        print(f"Bucket '{bucket_name}' already exists.")
-   # Save model to MinIO
-    timestamp = int(time.time())
-    model_key = f"challengers/challenger_{timestamp}.pkl"
-    model_buffer = io.BytesIO()
-    joblib.dump(rf, model_buffer)
-    model_buffer.seek(0)
-
-    minio_client.put_object(
-        "models", model_key, model_buffer, length=-1, part_size=10*1024*1024
-    )
-
-    # Send metadata to Kafka
-    producer.send("model.train.topic", {
-        "model_key": model_key,
-        "accuracy": acc,
-        "timestamp": timestamp
-    })
-
-    producer.flush()
-    producer.close()
-
-    print(f"Model sent to Kafka: {model_key} (accuracy: {acc:.4f})")
+            print(f"Model sent to Kafka: {model_key} (accuracy: {acc:.4f})")
+            
+            # Wait for 60 seconds before next cycle
+            print("Waiting 60 seconds before next training cycle...")
+            time.sleep(60)
+            
+        except Exception as e:
+            print(f"Error in training cycle: {e}")
+            print("Retrying in 60 seconds...")
+            time.sleep(60)

@@ -221,6 +221,13 @@ services:
       MINIO_SECRET_KEY: minioadmin
     ports:
       - "9000:9000"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
 
   ml-model:
     build:
@@ -229,10 +236,19 @@ services:
     depends_on:
       - kafka
       - db
+      - minio
+
   kafka-consumer-model:
     build:
       context: ./kafka-components
       dockerfile: ./kafka-consumer-model/Dockerfile
     depends_on:
-      - kafka
-      - ml-model
+      minio:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      ml-model:
+        condition: service_started
+
+volumes:
+  minio_data:
