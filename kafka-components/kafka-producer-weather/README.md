@@ -2,6 +2,8 @@
 
 This is a data generator component of the application. Specifically, it fetches hourly weather forecast data for the city of Trento from the freely available [Open-meteo API](https://open-meteo.com/en/docs?latitude=46.0679&longitude=11.1211&forecast_days=1&hourly=temperature_2m,precipitation_probability,rain,showers,snowfall,snow_depth,weather_code#weather_variable_documentation), creates a Kafka producer, and posts the stream of data on the topic `weather.topic` so that Kafka consumers can subscribe and obtain the messages with the data as soon as the cluster makes it available to them.
 
+Note: The API can be used to access any geographical region, but for this application it is set to get weather data for the city of Trento
+
 ## Produced fields
 
 The generator publishes to the above-specified topic and produces the following data fields:
