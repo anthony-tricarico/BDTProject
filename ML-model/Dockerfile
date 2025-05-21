@@ -7,7 +7,7 @@ COPY training_pipeline.py .
 COPY utils/ utils/
 COPY models/ models/
 
-RUN pip install kafka-python requests scikit-learn pandas dask sqlalchemy pyarrow psycopg2-binary joblib boto3 minio
+RUN pip install kafka-python requests numpy scikit-learn pandas dask sqlalchemy pyarrow psycopg2-binary joblib boto3 minio
 ENV PYTHONUNBUFFERED=1
 
 # Run Python with -u flag for unbuffered output

@@ -85,7 +85,8 @@ CREATE TABLE IF NOT EXISTS feature_table (
 	congestion_rate FLOAT,
 	school SMALLINT,
 	hospital SMALLINT,
-	weekend SMALLINT
+	weekend SMALLINT,
+	sine_time FLOAT
 );
 
 ALTER TABLE feature_table

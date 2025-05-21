@@ -12,6 +12,7 @@ import json
 import boto3
 import io
 from minio import Minio
+import numpy as np
 
 total_seats = 400
 # --- Configuration ---
@@ -100,6 +101,7 @@ def perform_aggregations(
         final['timestamp_x'].dt.second
     )
     final['weekend'] = (final['timestamp_x'].dt.dayofweek >= 5).astype(int)
+    final['sine_time'] = np.sin(2 * np.pi * final['seconds_from_midnight'] / 86400)
     # print(final.columns)
     final = final[selected_features]
     # --- Save to PostgreSQL ---
@@ -174,7 +176,7 @@ def train_rf_model(final_clean, best_params = None):
         best_params = {
             'criterion': 'friedman_mse',
             'max_depth': 10,
-            'max_features': 'log2',
+            'max_features': 10,
             'min_samples_split': 10,
             'n_estimators': 100
             }
@@ -235,7 +237,7 @@ if __name__ == "__main__":
             final_clean = perform_aggregations(selected_features=[
                 'trip_id_x' ,'timestamp_x', 'peak_hour', 'seconds_from_midnight',
                 'temperature', 'precipitation_probability', 'weather_code',
-                'traffic_level', 'event_dummy', 'congestion_rate', 'school', 'hospital', 'weekend'
+                'traffic_level', 'event_dummy', 'congestion_rate', 'school', 'hospital', 'weekend', 'sine_time'
             ])
 
             final_clean = final_clean.drop_duplicates(subset=['trip_id_x', 'timestamp_x'])

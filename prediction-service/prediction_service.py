@@ -36,6 +36,7 @@ class PredictionInput(BaseModel):
     school: bool
     hospital: bool
     weekend: bool
+    sine_time: float
 
 def load_model():
     """Load the champion model from MinIO"""
@@ -109,7 +110,8 @@ async def predict(input_data: PredictionInput):
                 "event_dummy": [input_data.event_dummy],
                 "school": [input_data.school],
                 "hospital": [input_data.hospital],
-                "weekend": [input_data.weekend]
+                "weekend": [input_data.weekend],
+                "sine_time": [input_data.sine_time]
             }
         )
         
