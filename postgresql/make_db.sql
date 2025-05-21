@@ -84,7 +84,8 @@ CREATE TABLE IF NOT EXISTS feature_table (
 	event_dummy SMALLINT,
 	congestion_rate FLOAT,
 	school SMALLINT,
-	hospital SMALLINT
+	hospital SMALLINT,
+	weekend SMALLINT
 );
 
 ALTER TABLE feature_table

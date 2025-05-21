@@ -257,5 +257,16 @@ services:
       kafka-consumer-model:
         condition: service_started
 
+  streamlit:
+    build:
+      context: ./streamlit
+      dockerfile: ./Dockerfile
+    ports:
+      - "8501:8501"
+    depends_on:
+      - db
+      - minio
+      - prediction-service
+
 volumes:
   minio_data:

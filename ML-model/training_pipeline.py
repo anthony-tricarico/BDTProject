@@ -13,7 +13,7 @@ import boto3
 import io
 from minio import Minio
 
-total_seats = 90
+total_seats = 400
 # --- Configuration ---
 POSTGRES_URL = "postgresql+psycopg2://postgres:example@db:5432/raw_data"
 
@@ -99,6 +99,7 @@ def perform_aggregations(
         final['timestamp_x'].dt.minute * 60 +
         final['timestamp_x'].dt.second
     )
+    final['weekend'] = (final['timestamp_x'].dt.dayofweek >= 5).astype(int)
     # print(final.columns)
     final = final[selected_features]
     # --- Save to PostgreSQL ---
@@ -234,7 +235,7 @@ if __name__ == "__main__":
             final_clean = perform_aggregations(selected_features=[
                 'trip_id_x' ,'timestamp_x', 'peak_hour', 'seconds_from_midnight',
                 'temperature', 'precipitation_probability', 'weather_code',
-                'traffic_level', 'event_dummy', 'congestion_rate', 'school', 'hospital'
+                'traffic_level', 'event_dummy', 'congestion_rate', 'school', 'hospital', 'weekend'
             ])
 
             final_clean = final_clean.drop_duplicates(subset=['trip_id_x', 'timestamp_x'])

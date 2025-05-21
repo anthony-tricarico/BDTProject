@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY prediction_service.py .
 
-RUN pip install fastapi uvicorn scikit-learn joblib minio numpy pydantic
+RUN pip install fastapi uvicorn scikit-learn joblib minio numpy pydantic pandas
 
 # Force Python to run unbuffered
 ENV PYTHONUNBUFFERED=1

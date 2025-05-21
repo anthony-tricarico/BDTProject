@@ -6,6 +6,7 @@ from minio import Minio
 import numpy as np
 from typing import List, Optional
 import time
+import pandas as pd
 
 app = FastAPI(title="Bus Congestion Prediction Service")
 
@@ -34,6 +35,7 @@ class PredictionInput(BaseModel):
     event_dummy: bool
     school: bool
     hospital: bool
+    weekend: bool
 
 def load_model():
     """Load the champion model from MinIO"""
@@ -82,18 +84,34 @@ async def predict(input_data: PredictionInput):
         raise HTTPException(status_code=500, detail="Model not loaded")
     
     try:
-        # Prepare input features
-        features = np.array([[
-            input_data.peak_hour,
-            input_data.seconds_from_midnight,
-            input_data.temperature,
-            input_data.precipitation_probability,
-            input_data.weather_code,
-            input_data.traffic_level,
-            input_data.event_dummy,
-            input_data.school,
-            input_data.hospital
-        ]])
+        # # Prepare input features
+        # features = np.array([[
+        #     input_data.peak_hour,
+        #     input_data.seconds_from_midnight,
+        #     input_data.temperature,
+        #     input_data.precipitation_probability,
+        #     input_data.weather_code,
+        #     input_data.traffic_level,
+        #     input_data.event_dummy,
+        #     input_data.school,
+        #     input_data.hospital,
+        #     input_data.weekend
+        # ]])
+
+        features = pd.DataFrame(
+            {
+                "peak_hour": [input_data.peak_hour],
+                "seconds_from_midnight": [input_data.seconds_from_midnight],
+                "temperature": [input_data.temperature],
+                "precipitation_probability": [input_data.precipitation_probability],
+                "weather_code": [input_data.weather_code],
+                "traffic_level": [input_data.traffic_level],
+                "event_dummy": [input_data.event_dummy],
+                "school": [input_data.school],
+                "hospital": [input_data.hospital],
+                "weekend": [input_data.weekend]
+            }
+        )
         
         # Make prediction
         prediction = model.predict(features)[0]
