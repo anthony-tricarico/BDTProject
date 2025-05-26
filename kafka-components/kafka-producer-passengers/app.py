@@ -10,19 +10,23 @@ import random
 import os
 from utils.db_connect import create_db_connection
 from utils.kafka_producer import create_kafka_producer
+from dotenv import load_dotenv
 
+# parse .env file and add all variables contained in it as environment variables 
+load_dotenv()
 SLEEP = os.getenv("SLEEP")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", None)
 
 def get_passengers():
 
-    with open("treemodel.pkl", "rb") as f:
-        model = load(f)
+    # with open("treemodel.pkl", "rb") as f:
+    #     model = load(f)
 
-    with open("labelencoder.pkl", "rb") as f:
-        le = load(f)
+    # with open("labelencoder.pkl", "rb") as f:
+    #     le = load(f)
 
-    with open("treemodel_out.pkl", "rb") as f:
-        model_out = load(f)
+    # with open("treemodel_out.pkl", "rb") as f:
+    #     model_out = load(f)
 
     # get the max number of buses
     connection = create_db_connection()
@@ -82,17 +86,17 @@ def get_passengers():
                 seconds = (sim_time - sim_time.replace(hour=0, minute=0, second=0)).total_seconds()
                 
                 # create dataframe to feed data into the model to output predictions
-                data_x = pd.DataFrame({
-                    'arrival_time': [seconds],
-                    # 'stop_id': [stop],
-                    'encoded_routes': [le.transform([str(route)])[0]],
-                    'weekend': [weekend],
-                    'peak_hour': [peak_hour]
-                })
+                # data_x = pd.DataFrame({
+                #     'arrival_time': [seconds],
+                #     # 'stop_id': [stop],
+                #     'encoded_routes': [le.transform([str(route)])[0]],
+                #     'weekend': [weekend],
+                #     'peak_hour': [peak_hour]
+                # })
                 
                 # Ensure the prediction is not negative
-                passenger_in = min(max(0, int(model.predict(data_x)[0])), 8)
-                passenger_out = max(max(0, int(model_out.predict(data_x)[0])), 2)
+                # passenger_in = min(max(0, int(model.predict(data_x)[0])), 8)
+                # passenger_out = max(max(0, int(model_out.predict(data_x)[0])), 2)
 
                 # # --- Cap so we don't exceed the max for the trip ---
                 # if running_in + passenger_in > max_passengers_per_trip:
@@ -106,26 +110,50 @@ def get_passengers():
 
                 # running_in += passenger_in
                 # running_out += passenger_out
+                print(GOOGLE_API_KEY)
 
-                payload = {
-                    'prediction_id': pred_id,
-                    'timestamp': sim_time.isoformat(),
-                    # convert to str to avoid serialization issues when saved in JSON
-                    'stop_id': str(stop),
-                    'route': str(route),
-                    'predicted_passengers_in': passenger_in,
-                    'predicted_passengers_out': passenger_out,
-                    'shape_id': str(shape_id),
-                    'trip_id': str(trip_idx),
-                    'stop_sequence': str(sequence),
-                    # always get the last appended bus to the list as the currently active one for this specific trip
-                    'bus_id': int(bus_active_list[-1]),
-                    "weekend": weekend,
-                    "peak_hour": peak_hour,
-                    # "event": event,
-                    "hospital": hospital,
-                    "school": school
-                }
+                if GOOGLE_API_KEY is not None:
+                    payload = {
+                        'prediction_id': pred_id,
+                        'timestamp': sim_time.isoformat(),
+                        # convert to str to avoid serialization issues when saved in JSON
+                        'stop_id': str(stop),
+                        'route': str(route),
+                        'predicted_passengers_in': passenger_in,
+                        'predicted_passengers_out': passenger_out,
+                        'shape_id': str(shape_id),
+                        'trip_id': str(trip_idx),
+                        'stop_sequence': str(sequence),
+                        # always get the last appended bus to the list as the currently active one for this specific trip
+                        'bus_id': int(bus_active_list[-1]),
+                        "weekend": weekend,
+                        "peak_hour": peak_hour,
+                        # "event": event,
+                        "hospital": hospital,
+                        "school": school
+                    }
+                
+                else:
+                    payload = {
+                        'prediction_id': pred_id,
+                        'timestamp': sim_time.isoformat(),
+                        # convert to str to avoid serialization issues when saved in JSON
+                        'stop_id': str(stop),
+                        'route': str(route),
+                        'predicted_passengers_in': passenger_in,
+                        'predicted_passengers_out': passenger_out,
+                        'shape_id': str(shape_id),
+                        'trip_id': str(trip_idx),
+                        'stop_sequence': str(sequence),
+                        # always get the last appended bus to the list as the currently active one for this specific trip
+                        'bus_id': int(bus_active_list[-1]),
+                        "weekend": weekend,
+                        "peak_hour": peak_hour,
+                        # "event": event,
+                        "hospital": hospital,
+                        "school": school,
+                        "traffic": row.loc['traffic_condition']
+                    }
 
                 print("Sending:", payload)
                 producer.send('bus.passenger.predictions', value=payload)

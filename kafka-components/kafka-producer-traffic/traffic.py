@@ -105,7 +105,7 @@ def fetch_with_retry_decorator(url):
 
 SLEEP = float(os.getenv("SLEEP", "1"))
 print("SLEEP is set to:", SLEEP, flush=True)
-GOOGLE_API_KEY = str(os.getenv("GOOGLE_API_KEY", None))
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", None)
 
 def build_get_traffic(destinations: tuple, origins: tuple, key: str, departure_time: str ='now'):
     gmaps_endpoint = "https://maps.googleapis.com/maps/api/distancematrix/json?"
@@ -125,6 +125,22 @@ def generate_traffic(msg, traffic_level, normal_time, traffic_time):
         "traffic": traffic_time,
         "shape_id": msg['shape_id']
     }
+
+def generate_traffic_no_api(msg):
+    measurement_id = f"{msg['stop_id']}-{msg['route']}-{msg['timestamp']}-{random.randint(1000, 9999)}"
+    return {
+        "measurement_id": str(measurement_id),
+        "timestamp": msg['timestamp'],
+        "stop_id": msg['stop_id'],
+        "route": msg['route'],
+        "bus_id": msg['bus_id'],
+        "trip_id": msg['trip_id'],
+        "traffic_level": msg['traffic'],
+        "normal": None,
+        "traffic": None,
+        "shape_id": msg['shape_id']
+    }
+
 
 def unique_shapes():
     shapes = []
@@ -166,85 +182,99 @@ def process_passenger_predictions(key: str = GOOGLE_API_KEY):
             msg = message.value
             shape_id = msg.get("shape_id")
             timestamp = msg.get('timestamp')
+            if GOOGLE_API_KEY is not None:
+                if not shape_id or not timestamp:
+                    print("Missing shape_id or timestamp in message:", msg, flush=True)
+                    continue
 
-            if not shape_id or not timestamp:
-                print("Missing shape_id or timestamp in message:", msg, flush=True)
-                continue
+                try:
+                    timestamp_converted = int(datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S").timestamp())
+                except ValueError as ve:
+                    print("Timestamp conversion error:", ve, "timestamp:", timestamp, flush=True)
+                    continue
 
-            try:
-                timestamp_converted = int(datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S").timestamp())
-            except ValueError as ve:
-                print("Timestamp conversion error:", ve, "timestamp:", timestamp, flush=True)
-                continue
+                if len(tried_shapes) == len(shapes_unique):
+                    tried_shapes = []
 
-            if len(tried_shapes) == len(shapes_unique):
-                tried_shapes = []
+                if shape_id in tried_shapes:
+                    continue
+                tried_shapes.append(shape_id)
 
-            if shape_id in tried_shapes:
-                continue
-            tried_shapes.append(shape_id)
+                connection = create_db_connection()
+                with connection:
+                    result = connection.execute(
+                        text("SELECT shape_pt_lat, shape_pt_lon FROM shapes WHERE shape_id = :shape_id"),
+                        {"shape_id": shape_id}
+                    )
+                    rows = list(result)
 
-            connection = create_db_connection()
-            with connection:
-                result = connection.execute(
-                    text("SELECT shape_pt_lat, shape_pt_lon FROM shapes WHERE shape_id = :shape_id"),
-                    {"shape_id": shape_id}
-                )
-                rows = list(result)
+                if not rows:
+                    print(f"No coordinates found for shape_id: {shape_id}", flush=True)
+                    continue
 
-            if not rows:
-                print(f"No coordinates found for shape_id: {shape_id}", flush=True)
-                continue
+                all_coordinates = [(row[0], row[1]) for row in rows]
 
-            all_coordinates = [(row[0], row[1]) for row in rows]
+                if len(all_coordinates) < 2:
+                    print(f"Not enough coordinates for shape_id: {shape_id}", flush=True)
+                    continue
 
-            if len(all_coordinates) < 2:
-                print(f"Not enough coordinates for shape_id: {shape_id}", flush=True)
-                continue
+                origins = all_coordinates[0]
+                destinations = all_coordinates[-1]
 
-            origins = all_coordinates[0]
-            destinations = all_coordinates[-1]
+                req = build_get_traffic(destinations, origins, key, timestamp_converted)
+                enforce_redis_rate_limit(9)
+                api_response = fetch_with_retry_decorator(req)
+                
+                if api_response is None:
+                    print("[API] No response data, skipping")
+                    continue
 
-            req = build_get_traffic(destinations, origins, key, timestamp_converted)
-            enforce_redis_rate_limit(9)
-            api_response = fetch_with_retry_decorator(req)
-            
-            if api_response is None:
-                print("[API] No response data, skipping")
-                continue
+                try:
+                    element = api_response['rows'][0]['elements'][0]
+                    normal = element['duration']['value']
+                    traffic = element['duration_in_traffic']['value']
+                except (IndexError, KeyError) as e:
+                    print("Error extracting traffic data:", e, flush=True)
+                    print("API response was:", json.dumps(api_response, indent=2), flush=True)
+                    continue
 
-            try:
-                element = api_response['rows'][0]['elements'][0]
-                normal = element['duration']['value']
-                traffic = element['duration_in_traffic']['value']
-            except (IndexError, KeyError) as e:
-                print("Error extracting traffic data:", e, flush=True)
-                print("API response was:", json.dumps(api_response, indent=2), flush=True)
-                continue
+                time_traffic = (traffic - normal) / normal * 100
 
-            time_traffic = (traffic - normal) / normal * 100
+                if time_traffic <= 10:
+                    traffic_level = 'no traffic/low'
+                elif time_traffic <= 30:
+                    traffic_level = 'medium'
+                elif time_traffic < 100:
+                    traffic_level = 'heavy'
+                else:
+                    traffic_level = 'severe/standstill'
 
-            if time_traffic <= 10:
-                traffic_level = 'no traffic/low'
-            elif time_traffic <= 30:
-                traffic_level = 'medium'
-            elif time_traffic < 100:
-                traffic_level = 'heavy'
+                traffic_msg = generate_traffic(msg, traffic_level, normal, traffic)
+                if traffic_msg:
+                    print(f"origins: {origins}, destinations: {destinations}")
+                    print("Sending traffic data:", traffic_msg, flush=True)
+                    producer.send("traffic.topic", value=traffic_msg)
+
+                all_coordinates = []
+
             else:
-                traffic_level = 'severe/standstill'
+                shape_id = msg.get("shape_id")
+                if shape_id in tried_shapes:
+                    continue
+                tried_shapes.append(shape_id)
+                traffic_msg = generate_traffic_no_api(msg)
+                if traffic_msg:
+                    # print(f"origins: {origins}, destinations: {destinations}")
+                    print("Sending traffic data:", traffic_msg, flush=True)
+                    producer.send("traffic.topic", value=traffic_msg)
 
-            traffic_msg = generate_traffic(msg, traffic_level, normal, traffic)
-            if traffic_msg:
-                print(f"origins: {origins}, destinations: {destinations}")
-                print("Sending traffic data:", traffic_msg, flush=True)
-                producer.send("traffic.topic", value=traffic_msg)
+                # all_coordinates = []
 
-            all_coordinates = []
 
         except Exception as e:
             print("Error processing message:", e, flush=True)
 
-        time.sleep(SLEEP)
+            time.sleep(SLEEP)
 
 if __name__ == "__main__":
     process_passenger_predictions()

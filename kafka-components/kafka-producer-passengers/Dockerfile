@@ -10,6 +10,6 @@ COPY kafka-producer-passengers/labelencoder.pkl .
 COPY kafka-producer-passengers/passengers_with_shapes.csv .
 COPY utils/ utils/
 
-RUN pip install pandas numpy kafka-python scikit-learn sqlalchemy psycopg2-binary
+RUN pip install pandas numpy kafka-python scikit-learn sqlalchemy psycopg2-binary dotenv
 
 CMD ["python", "app.py"]
