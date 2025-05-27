@@ -2,7 +2,8 @@ import dask.dataframe as dd
 import pandas as pd
 from sqlalchemy import create_engine, text
 from typing import List
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import root_mean_squared_error
 from utils.kafka_producer import create_kafka_producer
@@ -15,6 +16,7 @@ import io
 from minio import Minio
 import numpy as np
 from dask.distributed import Client
+import xgboost as xgb
 
 # Initialize Dask client
 client = Client("dask-scheduler:8786")
@@ -177,16 +179,29 @@ def split_data(final_clean, test_size: float=0.3, shuffle: bool=True, random_sta
 
 def train_rf_model(final_clean, best_params = None):
 
+    # grid for random forest
+    # if best_params is None:
+    #     best_params = {
+    #         'criterion': 'friedman_mse',
+    #         'max_depth': 10,
+    #         'max_features': 10,
+    #         'min_samples_split': 10,
+    #         'n_estimators': 100
+    #         }
+    
+    # grid for regression tree
     if best_params is None:
         best_params = {
             'criterion': 'friedman_mse',
             'max_depth': 10,
-            'max_features': 10,
-            'min_samples_split': 10,
-            'n_estimators': 100
+            'max_features': 'auto',  # Consider sqrt(n_features) at each split
+            'min_samples_split': 2,  # Minimum samples required to split a node
+            'min_samples_leaf': 1,   # Minimum samples required in a leaf node
+            'random_state': 42       # For reproducibility
             }
 
-    rf = RandomForestRegressor(**best_params)
+    #rf = RandomForestRegressor(**best_params)
+    rf = DecisionTreeRegressor()
 
     X_train, X_test, y_train, y_test = split_data(final_clean, test_size=0.3, shuffle=True)
 
@@ -199,6 +214,84 @@ def get_accuracy_model(final_clean, rf):
     X_train, X_test, y_train, y_test = split_data(final_clean, test_size=0.3, shuffle=True)
     # print(rf.score(X_test, y_test))
     preds = rf.predict(X_test)
+    rmse = root_mean_squared_error(y_true=y_test, y_pred=preds)
+    print(f"RMSE is: {rmse}")
+    return rmse
+
+def train_xgboost_model(final_clean, best_params = None):
+    """Train an XGBoost model with the current data"""
+    if best_params is None:
+        best_params = {
+            'objective': 'reg:squarederror',
+            'max_depth': 8,              # Increased depth to capture more complex patterns
+            'learning_rate': 0.05,       # Reduced learning rate for better feature utilization
+            'n_estimators': 200,         # Increased number of trees
+            'subsample': 0.8,
+            'colsample_bytree': 1.0,     # Use all features in each tree
+            'min_child_weight': 1,
+            'gamma': 0,
+            'random_state': 42,
+            'tree_method': 'hist',       # More efficient tree building
+            'max_bin': 256,              # More bins for better feature discretization
+            'scale_pos_weight': 1,       # Handle class imbalance if any
+            'reg_alpha': 0,              # L1 regularization
+            'reg_lambda': 1,             # L2 regularization
+            'max_leaves': 64             # Allow more leaves to capture complex patterns
+        }
+
+    X_train, X_test, y_train, y_test = split_data(final_clean, test_size=0.3, shuffle=True)
+    
+    # Ensure boolean features are properly encoded
+    boolean_features = ['peak_hour', 'event_dummy', 'school', 'hospital', 'weekend']
+    for feature in boolean_features:
+        if feature in X_train.columns:
+            X_train[feature] = X_train[feature].astype(int)
+            X_test[feature] = X_test[feature].astype(int)
+    
+    # Create DMatrix for XGBoost with feature names
+    dtrain = xgb.DMatrix(X_train, label=y_train, feature_names=X_train.columns.tolist())
+    dtest = xgb.DMatrix(X_test, label=y_test, feature_names=X_test.columns.tolist())
+    
+    # Train the model with early stopping
+    model = xgb.train(
+        best_params,
+        dtrain,
+        num_boost_round=best_params['n_estimators'],
+        evals=[(dtrain, 'train'), (dtest, 'test')],
+        early_stopping_rounds=20,
+        verbose_eval=True
+    )
+    
+    # Print detailed feature importances
+    importance_types = ['weight', 'gain', 'total_gain', 'cover', 'total_cover']
+    for importance_type in importance_types:
+        importance_dict = model.get_score(importance_type=importance_type)
+        importance_df = pd.DataFrame({
+            'feature': list(importance_dict.keys()),
+            f'importance_{importance_type}': list(importance_dict.values())
+        }).sort_values(f'importance_{importance_type}', ascending=False)
+        
+        print(f"\nXGBoost Feature Importances ({importance_type}):")
+        print(importance_df)
+    
+    # Print feature usage statistics
+    feature_usage = model.get_fscore()
+    print("\nFeature Usage Statistics:")
+    for feature, usage in sorted(feature_usage.items(), key=lambda x: x[1], reverse=True):
+        print(f"{feature}: {usage} times")
+    
+    return model
+
+def get_accuracy_model(final_clean, model, model_type='decision_tree'):
+    """Get model accuracy with support for different model types"""
+    X_train, X_test, y_train, y_test = split_data(final_clean, test_size=0.3, shuffle=True)
+    
+    if model_type == 'xgboost':
+        dtest = xgb.DMatrix(X_test)
+        preds = model.predict(dtest)
+    else:
+        preds = model.predict(X_test)
+    
     rmse = root_mean_squared_error(y_true=y_test, y_pred=preds)
     print(f"RMSE is: {rmse}")
     return rmse
@@ -251,8 +344,10 @@ if __name__ == "__main__":
 
             final_clean = final_clean.drop_duplicates(subset=['trip_id_x', 'timestamp_x'])
             write_to_sql(final_clean)
-            rf = train_rf_model(final_clean)
-            acc = get_accuracy_model(final_clean, rf)
+            
+            # Train XGBoost model
+            xgb_model = train_xgboost_model(final_clean)
+            acc = get_accuracy_model(final_clean, xgb_model, model_type='xgboost')
 
             # Save model to MinIO
             minio_client = Minio(
@@ -272,7 +367,7 @@ if __name__ == "__main__":
             timestamp = int(time.time())
             model_key = f"challengers/challenger_{timestamp}.pkl"
             model_buffer = io.BytesIO()
-            joblib.dump(rf, model_buffer)
+            joblib.dump(xgb_model, model_buffer)
             model_buffer.seek(0)
 
             minio_client.put_object(

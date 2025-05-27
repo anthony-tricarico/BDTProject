@@ -7,6 +7,7 @@ import numpy as np
 from typing import List, Optional
 import time
 import pandas as pd
+import xgboost as xgb  # Add XGBoost import
 
 app = FastAPI(title="Bus Congestion Prediction Service")
 
@@ -85,20 +86,7 @@ async def predict(input_data: PredictionInput):
         raise HTTPException(status_code=500, detail="Model not loaded")
     
     try:
-        # # Prepare input features
-        # features = np.array([[
-        #     input_data.peak_hour,
-        #     input_data.seconds_from_midnight,
-        #     input_data.temperature,
-        #     input_data.precipitation_probability,
-        #     input_data.weather_code,
-        #     input_data.traffic_level,
-        #     input_data.event_dummy,
-        #     input_data.school,
-        #     input_data.hospital,
-        #     input_data.weekend
-        # ]])
-
+        # Prepare input features
         features = pd.DataFrame(
             {
                 "peak_hour": [input_data.peak_hour],
@@ -115,8 +103,11 @@ async def predict(input_data: PredictionInput):
             }
         )
         
+        # Convert to DMatrix for XGBoost
+        dmatrix = xgb.DMatrix(features)
+        
         # Make prediction
-        prediction = model.predict(features)[0]
+        prediction = model.predict(dmatrix)[0]
         
         return {
             "prediction": float(prediction),
