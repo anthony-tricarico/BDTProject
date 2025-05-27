@@ -10,5 +10,4 @@ COPY models/ models/
 RUN pip install kafka-python requests numpy scikit-learn pandas dask sqlalchemy pyarrow psycopg2-binary joblib boto3 minio dask[distributed] bokeh>=3.1.0
 ENV PYTHONUNBUFFERED=1
 
-# Run Python with -u flag for unbuffered output
 CMD ["python", "-u", "training_pipeline.py"]
