@@ -27,7 +27,8 @@ class PredictionInput(BaseModel):
     trip_id: int
     timestamp: str
     peak_hour: bool
-    seconds_from_midnight: int
+    sine_time: float
+    # seconds_from_midnight: int
     temperature: float
     precipitation_probability: float
     weather_code: int
@@ -36,7 +37,6 @@ class PredictionInput(BaseModel):
     school: bool
     hospital: bool
     weekend: bool
-    sine_time: float
 
 def load_model():
     """Load the champion model from MinIO"""
@@ -102,7 +102,8 @@ async def predict(input_data: PredictionInput):
         features = pd.DataFrame(
             {
                 "peak_hour": [input_data.peak_hour],
-                "seconds_from_midnight": [input_data.seconds_from_midnight],
+                # "seconds_from_midnight": [input_data.seconds_from_midnight],
+                "sine_time": [input_data.sine_time],
                 "temperature": [input_data.temperature],
                 "precipitation_probability": [input_data.precipitation_probability],
                 "weather_code": [input_data.weather_code],
@@ -110,8 +111,7 @@ async def predict(input_data: PredictionInput):
                 "event_dummy": [input_data.event_dummy],
                 "school": [input_data.school],
                 "hospital": [input_data.hospital],
-                "weekend": [input_data.weekend],
-                "sine_time": [input_data.sine_time]
+                "weekend": [input_data.weekend]
             }
         )
         

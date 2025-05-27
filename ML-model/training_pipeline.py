@@ -242,10 +242,11 @@ if __name__ == "__main__":
 
             # Run the training pipeline
             print("\nStarting new training cycle...")
+            # if updating features included update also columns in the structure of the table in make_db.sql
             final_clean = perform_aggregations(selected_features=[
-                'trip_id_x' ,'timestamp_x', 'peak_hour', 'seconds_from_midnight',
+                'trip_id_x' ,'timestamp_x', 'peak_hour', 'sine_time',
                 'temperature', 'precipitation_probability', 'weather_code',
-                'traffic_level', 'event_dummy', 'congestion_rate', 'school', 'hospital', 'weekend', 'sine_time'
+                'traffic_level', 'event_dummy', 'congestion_rate', 'school', 'hospital', 'weekend'
             ])
 
             final_clean = final_clean.drop_duplicates(subset=['trip_id_x', 'timestamp_x'])

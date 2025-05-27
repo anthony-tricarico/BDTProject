@@ -76,7 +76,8 @@ CREATE TABLE IF NOT EXISTS feature_table (
 	trip_id_x VARCHAR,
 	timestamp_x TIMESTAMP,
 	peak_hour SMALLINT,
-	seconds_from_midnight BIGINT,
+	-- seconds_from_midnight BIGINT,
+	sine_time FLOAT,
 	temperature FLOAT,
 	precipitation_probability FLOAT,
 	weather_code SMALLINT,
@@ -85,8 +86,7 @@ CREATE TABLE IF NOT EXISTS feature_table (
 	congestion_rate FLOAT,
 	school SMALLINT,
 	hospital SMALLINT,
-	weekend SMALLINT,
-	sine_time FLOAT
+	weekend SMALLINT
 );
 
 ALTER TABLE feature_table
