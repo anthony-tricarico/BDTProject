@@ -49,7 +49,7 @@ def get_champion_accuracy():
                 length=accuracy_bytes.getbuffer().nbytes,
                 content_type="application/json"
             )
-        return float("-inf")
+        return float("inf")
 
 # --- Promote challenger to champion ---
 def promote_model(challenger_key, accuracy):
@@ -104,7 +104,7 @@ try:
                 champion_acc = get_champion_accuracy()
                 print(f"Champion accuracy: {champion_acc:.4f}, Challenger: {challenger_acc:.4f}")
 
-                if challenger_acc > champion_acc:
+                if challenger_acc < champion_acc:
                     print("New champion found!")
                     promote_model(challenger_key, challenger_acc)
                 else:

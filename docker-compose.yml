@@ -274,5 +274,36 @@ services:
       - minio
       - prediction-service
 
+  dask-scheduler:
+    build:
+      context: ./ml-model
+      dockerfile: ./Dockerfile
+    command: dask-scheduler
+    ports:
+      - "8786:8786" # Dask dashboard
+      - "8787:8787" # Dask scheduler
+    environment:
+      - DASK_DISTRIBUTED__SCHEDULER__WORK_STEALING=True
+      - DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES=50
+    depends_on:
+      - db
+      - minio
+
+  dask-worker:
+    build:
+      context: ./ml-model
+      dockerfile: ./Dockerfile
+    command: dask-worker dask-scheduler:8786
+    depends_on:
+      - dask-scheduler
+      - db
+      - minio
+    environment:
+      - DASK_DISTRIBUTED__WORKER__MEMORY__TARGET=0.8
+      - DASK_DISTRIBUTED__WORKER__MEMORY__SPILL=0.9
+      - DASK_DISTRIBUTED__WORKER__MEMORY__PAUSE=0.95
+    deploy:
+      replicas: 2 # Number of worker replicas
+
 volumes:
   minio_data:

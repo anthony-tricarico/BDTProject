@@ -4,6 +4,7 @@ from sqlalchemy import create_engine, text
 from typing import List
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import root_mean_squared_error
 from utils.kafka_producer import create_kafka_producer
 from utils.db_connect import create_db_connection
 import time
@@ -13,6 +14,10 @@ import boto3
 import io
 from minio import Minio
 import numpy as np
+from dask.distributed import Client
+
+# Initialize Dask client
+client = Client("dask-scheduler:8786")
 
 total_seats = 400
 # --- Configuration ---
@@ -154,7 +159,7 @@ def split_data(final_clean, test_size: float=0.3, shuffle: bool=True, random_sta
     X['traffic_level'] = X['traffic_level'].map(mapping)
     y = final_clean['congestion_rate']
 
-    # Drop any columns with all NaNs just in case
+    # Drop any columns with all NaNs 
     X = X.dropna(axis=1)
 
     # Reset index to avoid index name issues
@@ -192,8 +197,11 @@ def train_rf_model(final_clean, best_params = None):
 def get_accuracy_model(final_clean, rf):
 
     X_train, X_test, y_train, y_test = split_data(final_clean, test_size=0.3, shuffle=True)
-    print(rf.score(X_test, y_test))
-    return rf.score(X_test, y_test)
+    # print(rf.score(X_test, y_test))
+    preds = rf.predict(X_test)
+    rmse = root_mean_squared_error(y_true=y_test, y_pred=preds)
+    print(f"RMSE is: {rmse}")
+    return rmse
 
 if __name__ == "__main__":
     while True:  # Run indefinitely
