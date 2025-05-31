@@ -7,10 +7,21 @@ services:
     environment:
       POSTGRES_PASSWORD: example
       POSTGRES_DB: raw_data
-      # declares port-binding from port 5432 in the container
-      # to 5432 on the host system
     ports:
       - 5432:5432
+
+  mlflow-db:
+    image: postgres:latest
+    environment:
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: mlflow
+    ports:
+      - 5433:5432
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   adminer:
     # used to create the graphical access interface to the database
@@ -304,6 +315,18 @@ services:
       - DASK_DISTRIBUTED__WORKER__MEMORY__PAUSE=0.95
     deploy:
       replicas: 2 # Number of worker replicas
+
+  mlflow:
+    build:
+      context: ./mlflow
+      dockerfile: ./Dockerfile
+    ports:
+      - "5001:5001"
+    environment:
+      - MLFLOW_TRACKING_URI=postgresql://postgres:example@mlflow-db:5432/mlflow
+    depends_on:
+      mlflow-db:
+        condition: service_healthy
 
 volumes:
   minio_data:

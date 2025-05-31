@@ -1,0 +1,11 @@
+dask
+pandas
+scikit-learn
+xgboost
+sqlalchemy
+psycopg2-binary
+mlflow
+boto3
+minio
+kafka-python
+joblib 
