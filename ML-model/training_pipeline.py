@@ -33,98 +33,64 @@ POSTGRES_PASSWORD = "example"
 POSTGRES_DB = "raw_data"
 
 # MLflow database configuration
+MLFLOW_TRACKING_URI = "http://mlflow:5001"
 MLFLOW_DB_URL = "postgresql://postgres:example@mlflow-db:5432/mlflow"
 
 # Configure MLflow to disable Git tracking and silence warnings
 os.environ['MLFLOW_DISABLE_GIT'] = 'true'
 os.environ['GIT_PYTHON_REFRESH'] = 'quiet'
 
+def ensure_mlflow_database_exists():
+    """This function is now a no-op since the MLflow server handles database setup"""
+    pass
+
+def setup_mlflow():
+    """Consolidated MLflow setup function"""
+    try:
+        # Set tracking URI to the MLflow server
+        mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+        print(f"[MLflow] Tracking URI set to: {mlflow.get_tracking_uri()}")
+        
+        # Create experiment if it doesn't exist
+        experiment_name = "bus_congestion_prediction"
+        experiment = mlflow.get_experiment_by_name(experiment_name)
+        
+        if experiment is None:
+            experiment_id = mlflow.create_experiment(
+                experiment_name,
+                artifact_location="/mlflow/artifacts"  # Match with docker-compose volume
+            )
+            print(f"[MLflow] Created new experiment '{experiment_name}' with ID {experiment_id}")
+        else:
+            experiment_id = experiment.experiment_id
+            print(f"[MLflow] Using existing experiment '{experiment_name}' with ID {experiment_id}")
+        
+        mlflow.set_experiment(experiment_name)
+        
+        # Verify setup
+        current_experiment = mlflow.get_experiment_by_name(experiment_name)
+        if current_experiment is None:
+            raise Exception(f"Failed to set up experiment {experiment_name}")
+        
+        print(f"[MLflow] Setup complete. Using experiment: {current_experiment.name}")
+        print(f"[MLflow] Artifact location: {current_experiment.artifact_location}")
+        
+        return experiment_name
+    except Exception as e:
+        print(f"[MLflow] Error in setup: {e}")
+        raise
+
 # Initialize MLflow tracking
 mlflow.set_tracking_uri(MLFLOW_DB_URL)
+print(f"[MLflow] Tracking URI: {mlflow.get_tracking_uri()}")
 
 # Initialize Dask client
 client = Client("dask-scheduler:8786")
 
 total_seats = 400
 
-def ensure_mlflow_experiment():
-    """Ensure MLflow experiment exists and is properly initialized"""
-    experiment_name = "bus_congestion_prediction"
-    
-    try:
-        # Try to get existing experiment
-        experiment = mlflow.get_experiment_by_name(experiment_name)
-        
-        if experiment is None:
-            # Create new experiment if it doesn't exist
-            experiment_id = mlflow.create_experiment(experiment_name)
-            print(f"Created new experiment '{experiment_name}' with ID {experiment_id}")
-        else:
-            experiment_id = experiment.experiment_id
-            print(f"Using existing experiment '{experiment_name}' with ID {experiment_id}")
-        
-        # Set as active experiment
-        mlflow.set_experiment(experiment_id=experiment_id)
-        
-        # Verify experiment is set correctly
-        current_experiment = mlflow.get_experiment(experiment_id)
-        if current_experiment is None:
-            raise Exception(f"Failed to set experiment with ID {experiment_id}")
-        
-        print(f"MLflow experiment '{experiment_name}' is ready with ID {experiment_id}")
-        return experiment_id
-        
-    except Exception as e:
-        print(f"Error ensuring MLflow experiment: {e}")
-        raise
-
-# Ensure experiment exists at startup
-EXPERIMENT_ID = ensure_mlflow_experiment()
-
-def setup_mlflow_database():
-    """Setup MLflow database and tables"""
-    try:
-        # Initialize MLflow with the dedicated database
-        mlflow.set_tracking_uri(MLFLOW_DB_URL)
-        
-        # Create experiment if it doesn't exist
-        experiment_name = "bus_congestion_prediction"
-        
-        try:
-            # First, try to get the experiment
-            experiment = mlflow.get_experiment_by_name(experiment_name)
-            
-            if experiment is None:
-                # If experiment doesn't exist, create it
-                experiment_id = mlflow.create_experiment(experiment_name)
-                print(f"Created new experiment '{experiment_name}' with ID {experiment_id}")
-            else:
-                experiment_id = experiment.experiment_id
-                print(f"Using existing experiment '{experiment_name}' with ID {experiment_id}")
-            
-            # Set it as the active experiment
-            mlflow.set_experiment(experiment_id=experiment_id)
-            print(f"MLflow experiment '{experiment_name}' is ready")
-            
-            # Verify the experiment is set correctly
-            current_experiment = mlflow.get_experiment(experiment_id)
-            if current_experiment is None:
-                raise Exception(f"Failed to set experiment with ID {experiment_id}")
-            print(f"Verified experiment is set correctly: {current_experiment.name}")
-            
-        except Exception as e:
-            print(f"Error in experiment setup: {e}")
-            # Try to create a new experiment as fallback
-            experiment_id = mlflow.create_experiment(experiment_name)
-            mlflow.set_experiment(experiment_id=experiment_id)
-            print(f"Created new experiment as fallback with ID {experiment_id}")
-            
-    except Exception as e:
-        print(f"Error setting up MLflow database: {e}")
-        raise
-
-# Setup MLflow database
-setup_mlflow_database()
+# Call the setup function to initialize MLflow
+EXPERIMENT_NAME = setup_mlflow()
 
 # --- Configuration ---
 POSTGRES_URL = "postgresql+psycopg2://postgres:example@db:5432/raw_data"
@@ -366,66 +332,44 @@ def train_xgboost_model(final_clean, best_params = None):
         }
 
     X_train, X_test, y_train, y_test = split_data(final_clean, test_size=0.3, shuffle=True)
-    
-    # Ensure boolean features are properly encoded
     boolean_features = ['peak_hour', 'event_dummy', 'school', 'hospital', 'weekend']
     for feature in boolean_features:
         if feature in X_train.columns:
             X_train[feature] = X_train[feature].astype(int)
             X_test[feature] = X_test[feature].astype(int)
-    
-    # Create DMatrix for XGBoost with feature names
     dtrain = xgb.DMatrix(X_train, label=y_train, feature_names=X_train.columns.tolist())
     dtest = xgb.DMatrix(X_test, label=y_test, feature_names=X_test.columns.tolist())
-    
-    # Start a new run in the current experiment
-    with mlflow.start_run(experiment_id=EXPERIMENT_ID):
-        # Log parameters
-        mlflow.log_params(best_params)
-        
-        # Train the model with early stopping
-        model = xgb.train(
-            best_params,
-            dtrain,
-            num_boost_round=best_params['n_estimators'],
-            evals=[(dtrain, 'train'), (dtest, 'test')],
-            early_stopping_rounds=20,
-            verbose_eval=True
-        )
-        
-        # Make predictions
-        train_preds = model.predict(dtrain)
-        test_preds = model.predict(dtest)
-        
-        # Calculate metrics
-        train_rmse = root_mean_squared_error(y_train, train_preds)
-        test_rmse = root_mean_squared_error(y_test, test_preds)
-        
-        # Log metrics
-        mlflow.log_metric("train_rmse", train_rmse)
-        mlflow.log_metric("test_rmse", test_rmse)
-        
-        # Log feature importances
-        importance_types = ['weight', 'gain', 'total_gain', 'cover', 'total_cover']
-        for importance_type in importance_types:
-            importance_dict = model.get_score(importance_type=importance_type)
-            importance_df = pd.DataFrame({
-                'feature': list(importance_dict.keys()),
-                f'importance_{importance_type}': list(importance_dict.values())
-            }).sort_values(f'importance_{importance_type}', ascending=False)
-            
-            # Log feature importance as artifact
-            importance_df.to_csv(f"feature_importance_{importance_type}.csv", index=False)
-            mlflow.log_artifact(f"feature_importance_{importance_type}.csv")
-        
-        # Log model
-        mlflow.xgboost.log_model(model, "model", registered_model_name="bus_congestion_model")
-        
-        # Log model signature
-        signature = infer_signature(X_test, test_preds)
-        mlflow.xgboost.log_model(model, "model", signature=signature)
-        
-        return model
+
+    # No mlflow.start_run here; use the active run from the main loop
+    print(f"[MLflow] Logging params and metrics to run: {mlflow.active_run().info.run_id if mlflow.active_run() else 'No active run!'}")
+    mlflow.log_params(best_params)
+    model = xgb.train(
+        best_params,
+        dtrain,
+        num_boost_round=best_params['n_estimators'],
+        evals=[(dtrain, 'train'), (dtest, 'test')],
+        early_stopping_rounds=20,
+        verbose_eval=True
+    )
+    train_preds = model.predict(dtrain)
+    test_preds = model.predict(dtest)
+    train_rmse = root_mean_squared_error(y_train, train_preds)
+    test_rmse = root_mean_squared_error(y_test, test_preds)
+    mlflow.log_metric("train_rmse", train_rmse)
+    mlflow.log_metric("test_rmse", test_rmse)
+    importance_types = ['weight', 'gain', 'total_gain', 'cover', 'total_cover']
+    for importance_type in importance_types:
+        importance_dict = model.get_score(importance_type=importance_type)
+        importance_df = pd.DataFrame({
+            'feature': list(importance_dict.keys()),
+            f'importance_{importance_type}': list(importance_dict.values())
+        }).sort_values(f'importance_{importance_type}', ascending=False)
+        importance_df.to_csv(f"feature_importance_{importance_type}.csv", index=False)
+        mlflow.log_artifact(f"feature_importance_{importance_type}.csv")
+    mlflow.xgboost.log_model(model, "model", registered_model_name="bus_congestion_model")
+    signature = infer_signature(X_test, test_preds)
+    mlflow.xgboost.log_model(model, "model", signature=signature)
+    return model
 
 def get_accuracy_model(final_clean, model, model_type='decision_tree'):
     """Get model accuracy with support for different model types"""
@@ -447,7 +391,6 @@ if __name__ == "__main__":
             # Wait for services to be ready
             max_retries = 10
             retry_count = 0
-            
             while retry_count < max_retries:
                 try:
                     # Test database connection
@@ -467,9 +410,8 @@ if __name__ == "__main__":
                     # Test Kafka connection
                     producer = create_kafka_producer()
                     
-                    # Ensure MLflow experiment exists
-                    ensure_mlflow_experiment()
-                    
+                    # Initialize MLflow
+                    setup_mlflow()
                     print("All services are ready!")
                     break
                 except Exception as e:
@@ -479,72 +421,73 @@ if __name__ == "__main__":
                         raise Exception("Failed to connect to required services")
                     time.sleep(5)
 
-            # Run the training pipeline
-            print("\nStarting new training cycle...")
-            final_clean = perform_aggregations(selected_features=[
-                'trip_id_x' ,'timestamp_x', 'peak_hour', 'sine_time',
-                'temperature', 'precipitation_probability', 'weather_code',
-                'traffic_level', 'event_dummy', 'congestion_rate', 'school', 'hospital', 'weekend'
-            ])
-
-            final_clean = final_clean.drop_duplicates(subset=['trip_id_x', 'timestamp_x'])
-            write_to_sql(final_clean)
-            
-            # Train XGBoost model with MLflow tracking
-            xgb_model = train_xgboost_model(final_clean)
-            acc = get_accuracy_model(final_clean, xgb_model, model_type='xgboost')
-
-            # Save model to MinIO
-            minio_client = Minio(
-                "minio:9000",
-                access_key="minioadmin",
-                secret_key="minioadmin",
-                secure=False
-            )
-
-            bucket_name = "models"
-            if not minio_client.bucket_exists(bucket_name):
-                minio_client.make_bucket(bucket_name)
-                print(f"Created bucket: {bucket_name}")
-            else:
-                print(f"Bucket '{bucket_name}' already exists.")
-
-            timestamp = int(time.time())
-            model_key = f"challengers/challenger_{timestamp}.pkl"
-            model_buffer = io.BytesIO()
-            joblib.dump(xgb_model, model_buffer)
-            model_buffer.seek(0)
-
-            minio_client.put_object(
-                "models", model_key, model_buffer, length=-1, part_size=10*1024*1024
-            )
-
-            # Send metadata to Kafka
-            try:
-                message = {
-                    "model_key": model_key,
-                    "accuracy": float(acc),
-                    "timestamp": timestamp
-                }
-                print(f"Attempting to send message to Kafka: {message}")
-                future = producer.send("model.train.topic", value=message)
-                record_metadata = future.get(timeout=10)
-                print(f"Message sent successfully to partition {record_metadata.partition} at offset {record_metadata.offset}")
-                producer.flush()
-                print(f"Producer flushed successfully")
-            except Exception as e:
-                print(f"Error sending to Kafka: {e}")
-                raise
-            finally:
-                print("Closing producer...")
-                producer.close()
-
-            print(f"Model sent to Kafka: {model_key} (accuracy: {acc:.4f})")
-            
-            # Wait for 60 seconds before next cycle
-            print("Waiting 60 seconds before next training cycle...")
-            time.sleep(60)
-            
+            # Run the training pipeline inside an MLflow run
+            with mlflow.start_run(run_name="training_cycle"):
+                print(f"[MLflow] Started run: {mlflow.active_run().info.run_id}")
+                print("\nStarting new training cycle...")
+                
+                final_clean = perform_aggregations(selected_features=[
+                    'trip_id_x', 'timestamp_x', 'peak_hour', 'sine_time',
+                    'temperature', 'precipitation_probability', 'weather_code',
+                    'traffic_level', 'event_dummy', 'congestion_rate', 'school', 'hospital', 'weekend'
+                ])
+                final_clean = final_clean.drop_duplicates(subset=['trip_id_x', 'timestamp_x'])
+                write_to_sql(final_clean)
+                
+                # Train XGBoost model with MLflow tracking
+                xgb_model = train_xgboost_model(final_clean)
+                acc = get_accuracy_model(final_clean, xgb_model, model_type='xgboost')
+                
+                # Save model to MinIO
+                minio_client = Minio(
+                    "minio:9000",
+                    access_key="minioadmin",
+                    secret_key="minioadmin",
+                    secure=False
+                )
+                
+                bucket_name = "models"
+                if not minio_client.bucket_exists(bucket_name):
+                    minio_client.make_bucket(bucket_name)
+                    print(f"Created bucket: {bucket_name}")
+                else:
+                    print(f"Bucket '{bucket_name}' already exists.")
+                
+                timestamp = int(time.time())
+                model_key = f"challengers/challenger_{timestamp}.pkl"
+                model_buffer = io.BytesIO()
+                joblib.dump(xgb_model, model_buffer)
+                model_buffer.seek(0)
+                minio_client.put_object(
+                    "models", model_key, model_buffer, length=-1, part_size=10*1024*1024
+                )
+                
+                # Send metadata to Kafka
+                try:
+                    message = {
+                        "model_key": model_key,
+                        "accuracy": float(acc),
+                        "timestamp": timestamp
+                    }
+                    print(f"Attempting to send message to Kafka: {message}")
+                    future = producer.send("model.train.topic", value=message)
+                    record_metadata = future.get(timeout=10)
+                    print(f"Message sent successfully to partition {record_metadata.partition} at offset {record_metadata.offset}")
+                    producer.flush()
+                    print(f"Producer flushed successfully")
+                except Exception as e:
+                    print(f"Error sending to Kafka: {e}")
+                    raise
+                finally:
+                    print("Closing producer...")
+                    producer.close()
+                
+                print(f"Model sent to Kafka: {model_key} (accuracy: {acc:.4f})")
+                
+                # Wait for 60 seconds before next cycle
+                print("Waiting 60 seconds before next training cycle...")
+                time.sleep(60)
+                
         except Exception as e:
             print(f"Error in training cycle: {e}")
             print("Retrying in 60 seconds...")
