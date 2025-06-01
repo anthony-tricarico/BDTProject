@@ -1,245 +1,216 @@
-# import streamlit as st
-# import pandas as pd
-# import pydeck as pdk
-# import time
-# import numpy as np
-
-# st.set_page_config(layout="wide")
-# st.title("🚌 Bus Animation with Route Trail")
-
-# # ✅ Use a valid transparent PNG bus icon
-# BUS_ICON_URL = "https://img.icons8.com/emoji/48/bus-emoji.png"
-
-# # Simulated GPS route
-
-# route = [
-#     {"lat": 46.06612, "lon": 11.15504},
-#     {"lat": 46.06612, "lon": 11.15504},
-#     {"lat": 46.06639, "lon": 11.15629},
-#     {"lat": 46.06642, "lon": 11.15679},
-#     {"lat": 46.06636, "lon": 11.15713},
-#     {"lat": 46.06625, "lon": 11.15734},
-#     {"lat": 46.06475, "lon": 11.15872},
-#     {"lat": 46.06463, "lon": 11.15899},
-#     {"lat": 46.06462, "lon": 11.15916},
-#     {"lat": 46.06464, "lon": 11.15928},
-#     {"lat": 46.06475, "lon": 11.15942},
-#     {"lat": 46.06475, "lon": 11.15942},
-#     {"lat": 46.06482, "lon": 11.15947}
-# ]
-
-# # Add icon data to each point
-# for point in route:
-#     point["icon_data"] = {
-#         "url": BUS_ICON_URL,
-#         "width": 128,
-#         "height": 128,
-#         "anchorY": 128
-#     }
-
-# df_route = pd.DataFrame(route)
-# map_placeholder = st.empty()
-
-# # Define bus stops
-# stops = [
-#     {"lat": 46.06612, "lon": 11.15504, "name": "Piazza Dante"},
-#     {"lat": 46.06475, "lon": 11.15872, "name": "Via Verdi"},
-#     {"lat": 46.06482, "lon": 11.15947, "name": "Università Centrale"}
-# ]
-
-# PIN_ICON_URL = "https://img.icons8.com/color/48/marker.png"
-
-# for stop in stops:
-#     stop["icon_data"] = {
-#         "url": PIN_ICON_URL,
-#         "width": 128,
-#         "height": 128,
-#         "anchorY": 128
-#     }
-
-# df_stops = pd.DataFrame(stops)
-
-# # Animate the bus and build the path
-# for i in range(1, len(df_route) + 1):
-#     current_position = df_route.iloc[[i - 1]]  # One-row DataFrame with current bus
-#     path_so_far = df_route.iloc[:i]            # Path covered so far
-
-#     # ✅ Format the path data for LineLayer
-#     path_layer_data = [{
-#         "path": path_so_far[["lon", "lat"]].values.tolist()
-#     }]
-
-#     # Layers
-#     icon_layer = pdk.Layer(
-#         "IconLayer",
-#         data=current_position,
-#         get_icon="icon_data",
-#         get_size=4,
-#         size_scale=15,
-#         get_position='[lon, lat]',
-#         pickable=False,
-#     )
-
-#     line_layer = pdk.Layer(
-#         "PathLayer",
-#         data=path_layer_data,
-#         get_path="path",
-#         get_color=[255, 0, 0],
-#         width_scale=20,
-#         width_min_pixels=2,
-#     )
-
-#     stop_layer = pdk.Layer(
-#         "IconLayer",
-#         data=df_stops,
-#         get_icon="icon_data",
-#         get_size=3,
-#         size_scale=8,
-#         get_position='[lon, lat]',
-#         pickable=True,
-#         tooltip={"text": "{name}"}
-#     )
-
-#     view_state = pdk.ViewState(
-#         latitude=current_position["lat"].values[0],
-#         longitude=current_position["lon"].values[0],
-#         zoom=15,
-#         pitch=45
-#     )
-
-#     r = pdk.Deck(
-#         layers=[line_layer, icon_layer, stop_layer],
-#         initial_view_state=view_state,
-#         tooltip={"text": "{name}\nLat: {lat}, Lon: {lon}"}
-#     )
-
-#     map_placeholder.pydeck_chart(r)
-#     time.sleep(1)
-
 import streamlit as st
 import pandas as pd
 import pydeck as pdk
 import time
+from sqlalchemy import create_engine, text
 import numpy as np
 
 st.set_page_config(layout="wide")
-st.title("🚌 Live Bus Congestion Map with Color Coding")
-st.markdown("🔴 High Congestion | 🟠 Medium Congestion | 🟢 Low Congestion")
+st.title("🚌 Live Bus Route Visualization with Congestion")
+st.markdown("🔴 High Congestion | 🟡 Medium Congestion | 🟢 Low Congestion")
 
-
-# ✅ Use a valid transparent PNG bus icon
+# Icons
 BUS_ICON_URL = "https://img.icons8.com/emoji/48/bus-emoji.png"
 PIN_ICON_URL = "https://img.icons8.com/color/48/marker.png"
 
-# Simulated GPS route
-route = [
-    {"lat": 46.06612, "lon": 11.15504},
-    {"lat": 46.06639, "lon": 11.15629},
-    {"lat": 46.06642, "lon": 11.15679},
-    {"lat": 46.06636, "lon": 11.15713},
-    {"lat": 46.06625, "lon": 11.15734},
-    {"lat": 46.06475, "lon": 11.15872},
-    {"lat": 46.06463, "lon": 11.15899},
-    {"lat": 46.06462, "lon": 11.15916},
-    {"lat": 46.06464, "lon": 11.15928},
-    {"lat": 46.06475, "lon": 11.15942},
-    {"lat": 46.06482, "lon": 11.15947}
-]
+# Database connection settings
+db_user = 'postgres'
+db_pass = 'example'
+db_host = 'db'
+db_port = '5432'
+db_name = 'raw_data'
 
-# Add simulated congestion levels (0=low, 1=med, 2=high)
-congestion_levels = np.random.choice([0, 1, 2], size=len(route)-1, p=[0.5, 0.3, 0.2])
-congestion_colors = {
-    0: [0, 255, 0],     # Green
-    1: [255, 255, 0],   # Yellow
-    2: [255, 0, 0]      # Red
-}
+# Congestion color mapping
+def get_congestion_color(congestion_rate):
+    if congestion_rate >= 0.7:
+        return [255, 0, 0]  # Red for high congestion
+    elif congestion_rate >= 0.4:
+        return [255, 255, 0]  # Yellow for medium congestion
+    else:
+        return [0, 255, 0]  # Green for low congestion
 
-# Add bus icon to each point
-for point in route:
-    point["icon_data"] = {
-        "url": BUS_ICON_URL,
-        "width": 128,
-        "height": 128,
-        "anchorY": 128
-    }
+# Create database connection
+@st.cache_resource
+def get_db_connection():
+    engine = create_engine(f'postgresql+psycopg2://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}')
+    return engine
 
-df_route = pd.DataFrame(route)
-map_placeholder = st.empty()
+# Get available routes
+@st.cache_data
+def get_routes():
+    engine = get_db_connection()
+    query = "SELECT DISTINCT route_short_name, route_long_name FROM routes WHERE route_short_name IS NOT NULL ORDER BY route_short_name"
+    return pd.read_sql(query, engine)
 
-# Define interactive stops
-stops = [
-    {"lat": 46.06612, "lon": 11.15504, "name": "Piazza Dante"},
-    {"lat": 46.06475, "lon": 11.15872, "name": "Via Verdi"},
-    {"lat": 46.06482, "lon": 11.15947, "name": "Università Centrale"}
-]
-for stop in stops:
-    stop["icon_data"] = {
-        "url": PIN_ICON_URL,
-        "width": 128,
-        "height": 128,
-        "anchorY": 128
-    }
-df_stops = pd.DataFrame(stops)
-
-# Animate the bus and build dynamic colored path
-for i in range(1, len(df_route)):
-    current_position = df_route.iloc[[i]]  # One-row DataFrame with current bus
-    path_so_far = df_route.iloc[:i+1]
-
-    # Create a list of line segments with colors based on congestion
-    path_segments = []
-    for j in range(i):
-        path_segments.append({
-            "path": [
-                [df_route.iloc[j]["lon"], df_route.iloc[j]["lat"]],
-                [df_route.iloc[j+1]["lon"], df_route.iloc[j+1]["lat"]]
-            ],
-            "color": congestion_colors[congestion_levels[j]]
-        })
-
-    # Layers
-    icon_layer = pdk.Layer(
-        "IconLayer",
-        data=current_position,
-        get_icon="icon_data",
-        get_size=4,
-        size_scale=15,
-        get_position='[lon, lat]',
-        pickable=False,
+# Get route data with congestion information
+def get_route_data(route_short_name):
+    engine = get_db_connection()
+    
+    query = """
+    WITH route_shapes AS (
+        SELECT DISTINCT r.route_id, r.route_short_name, r.route_long_name, 
+               t.trip_id, t.shape_id
+        FROM routes r
+        JOIN trips t ON r.route_id = t.route_id
+        WHERE r.route_short_name = :route_short_name
+        AND t.shape_id IS NOT NULL
+        LIMIT 1
+    ),
+    latest_congestion AS (
+        SELECT 
+            trip_id_x as trip_id,
+            congestion_rate,
+            ROW_NUMBER() OVER (PARTITION BY trip_id_x ORDER BY timestamp_x DESC) as rn
+        FROM feature_table
+        WHERE congestion_rate IS NOT NULL
     )
+    SELECT 
+        s.shape_pt_lat as lat,
+        s.shape_pt_lon as lon,
+        s.shape_pt_sequence as sequence,
+        NULL as stop_id,
+        NULL as stop_name,
+        'route' as point_type,
+        COALESCE(lc.congestion_rate, 0.3) as congestion_rate
+    FROM route_shapes rs
+    JOIN shapes s ON rs.shape_id = s.shape_id
+    LEFT JOIN latest_congestion lc ON lc.trip_id = rs.trip_id AND lc.rn = 1
+    UNION ALL
+    SELECT 
+        st.stop_lat as lat,
+        st.stop_lon as lon,
+        stimes.stop_sequence as sequence,
+        st.stop_id,
+        st.stop_name,
+        'stop' as point_type,
+        NULL as congestion_rate
+    FROM route_shapes rs
+    JOIN stop_times stimes ON rs.trip_id = stimes.trip_id
+    JOIN stops st ON stimes.stop_id = st.stop_id
+    ORDER BY sequence;
+    """
+    
+    return pd.read_sql(text(query), engine, params={"route_short_name": route_short_name})
 
-    colored_line_layer = pdk.Layer(
-        "PathLayer",
-        data=path_segments,
-        get_path="path",
-        get_color="color",
-        width_scale=20,
-        width_min_pixels=3,
-    )
+# Get available routes
+routes_df = get_routes()
+route_options = routes_df['route_short_name'].tolist()
 
-    stop_layer = pdk.Layer(
-        "IconLayer",
-        data=df_stops,
-        get_icon="icon_data",
-        get_size=3,
-        size_scale=8,
-        get_position='[lon, lat]',
-        pickable=True,
-        tooltip={"text": "{name}"}
-    )
+# Route selection
+selected_route = st.selectbox(
+    "Select a bus route:",
+    route_options,
+    format_func=lambda x: f"Route {x} - {routes_df[routes_df['route_short_name'] == x]['route_long_name'].iloc[0]}"
+)
 
-    view_state = pdk.ViewState(
-        latitude=current_position["lat"].values[0],
-        longitude=current_position["lon"].values[0],
-        zoom=15,
-        pitch=45
-    )
-
-    r = pdk.Deck(
-        layers=[colored_line_layer, icon_layer, stop_layer],
-        initial_view_state=view_state,
-        tooltip={"text": "{name}\nLat: {lat}, Lon: {lon}"}
-    )
-
-    map_placeholder.pydeck_chart(r)
-    time.sleep(1)
+if selected_route:
+    # Get route data
+    route_data = get_route_data(selected_route)
+    
+    if not route_data.empty:
+        # Separate route points and stops
+        route_points = route_data[route_data['point_type'] == 'route']
+        stops = route_data[route_data['point_type'] == 'stop']
+        
+        # Create map placeholder for animation
+        map_placeholder = st.empty()
+        
+        # Animate the bus along the route
+        for i in range(len(route_points)):
+            current_position = route_points.iloc[[i]]
+            path_so_far = route_points.iloc[:i+1]
+            
+            # Create path segments with congestion colors
+            path_segments = []
+            for j in range(i):
+                path_segments.append({
+                    "path": [
+                        [route_points.iloc[j]['lon'], route_points.iloc[j]['lat']],
+                        [route_points.iloc[j+1]['lon'], route_points.iloc[j+1]['lat']]
+                    ],
+                    "color": get_congestion_color(route_points.iloc[j]['congestion_rate'])
+                })
+            
+            # Bus icon layer
+            bus_data = [{
+                "lat": current_position['lat'].values[0],
+                "lon": current_position['lon'].values[0],
+                "icon_data": {
+                    "url": BUS_ICON_URL,
+                    "width": 128,
+                    "height": 128,
+                    "anchorY": 128
+                }
+            }]
+            
+            # Stops data
+            stops_data = stops.apply(
+                lambda x: {
+                    "name": x['stop_name'],
+                    "lat": x['lat'],
+                    "lon": x['lon'],
+                    "icon_data": {
+                        "url": PIN_ICON_URL,
+                        "width": 128,
+                        "height": 128,
+                        "anchorY": 128
+                    }
+                },
+                axis=1
+            ).tolist()
+            
+            # Create layers
+            bus_layer = pdk.Layer(
+                "IconLayer",
+                data=bus_data,
+                get_icon="icon_data",
+                get_size=4,
+                size_scale=15,
+                get_position=["lon", "lat"],
+                pickable=False,
+            )
+            
+            path_layer = pdk.Layer(
+                "PathLayer",
+                data=path_segments,
+                get_path="path",
+                get_color="color",
+                width_scale=20,
+                width_min_pixels=2,
+            )
+            
+            stop_layer = pdk.Layer(
+                "IconLayer",
+                data=stops_data,
+                get_icon="icon_data",
+                get_size=3,
+                size_scale=8,
+                get_position=["lon", "lat"],
+                pickable=True,
+                tooltip={"text": "{name}"}
+            )
+            
+            # Calculate view state
+            view_state = pdk.ViewState(
+                latitude=current_position['lat'].values[0],
+                longitude=current_position['lon'].values[0],
+                zoom=14,
+                pitch=45
+            )
+            
+            # Create and display the map
+            r = pdk.Deck(
+                layers=[path_layer, stop_layer, bus_layer],
+                initial_view_state=view_state,
+                tooltip={"text": "{name}"}
+            )
+            
+            map_placeholder.pydeck_chart(r)
+            time.sleep(0.5)  # Adjust animation speed
+            
+        # Display stops information
+        st.subheader("Bus Stops")
+        stops_info = stops[['stop_name', 'sequence']].sort_values('sequence')
+        st.dataframe(stops_info, hide_index=True)
+    else:
+        st.error("No route data found for the selected route.")
