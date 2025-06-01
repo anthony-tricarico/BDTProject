@@ -71,14 +71,15 @@ Request body:
   "trip_id": 123,
   "timestamp": "2024-03-20T10:00:00",
   "peak_hour": true,
-  "seconds_from_midnight": 36000,
+  "sine_time": 0.5,
   "temperature": 20.5,
   "precipitation_probability": 0.2,
   "weather_code": 1,
   "traffic_level": 2,
   "event_dummy": false,
   "school": true,
-  "hospital": false
+  "hospital": false,
+  "weekend": false
 }
 ```
 
@@ -96,7 +97,7 @@ Response:
 The prediction model uses the following features:
 
 - `peak_hour`: Whether the trip is during peak hours
-- `seconds_from_midnight`: Time of day in seconds
+- `sine_time`: Cyclical time feature
 - `temperature`: Current temperature
 - `precipitation_probability`: Chance of rain
 - `weather_code`: Weather condition code
@@ -104,6 +105,7 @@ The prediction model uses the following features:
 - `event_dummy`: Whether there's a special event
 - `school`: Whether near a school
 - `hospital`: Whether near a hospital
+- `weekend`: Whether the trip is on a weekend
 
 ## Usage
 
@@ -132,14 +134,15 @@ curl -X POST http://localhost:8006/predict \
     "trip_id": 123,
     "timestamp": "2024-03-20T10:00:00",
     "peak_hour": true,
-    "seconds_from_midnight": 36000,
+    "sine_time": 0.5,
     "temperature": 20.5,
     "precipitation_probability": 0.2,
     "weather_code": 1,
     "traffic_level": 2,
     "event_dummy": false,
     "school": true,
-    "hospital": false
+    "hospital": false,
+    "weekend": false
   }'
 ```
 
@@ -167,29 +170,6 @@ This component works in conjunction with:
 - `minio`: Stores and serves the champion model
 - `kafka-consumer-model`: Manages the champion/challenger model pattern
 - `ml-model`: Trains new models
-
-## Development
-
-### Local Development
-
-1. Create a virtual environment:
-
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-2. Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-3. Run the service:
-
-```bash
-python prediction_service.py
-```
 
 ### Adding New Features
 

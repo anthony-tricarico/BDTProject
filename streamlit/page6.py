@@ -264,7 +264,7 @@ def main():
             # Prepare prediction data
             prediction_data = {
                 "trip_id": route_short_name,
-                "timestamp": timestamp_str,  # Using formatted timestamp string
+                "timestamp": timestamp_str,  
                 "peak_hour": peak_hour,
                 "sine_time": sine_time,
                 "temperature": temperature,
