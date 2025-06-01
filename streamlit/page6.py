@@ -247,7 +247,7 @@ def main():
         traffic_level = st.slider("Traffic Level (1-3)", 0, 3, 0)
         
         # Event dummy only (weekend is determined from date)
-        event_dummy = st.checkbox("Is there an event nearby?")
+        event_dummy = st.checkbox("Is there an event scheduled nearby?")
         
         # Display weekend status (informational)
         st.info(f"Selected date is a {'weekend' if is_weekend else 'weekday'}")
@@ -299,7 +299,7 @@ def main():
                     Congestion Level Interpretation:
                     - 0-0.3: Low congestion
                     - 0.3-0.8: Moderate congestion
-                    - higher than 0.8: High congestion
+                    - Higher than 0.8: High congestion
                     """)
                 else:
                     st.error(f"Error making prediction: {response.text}")
