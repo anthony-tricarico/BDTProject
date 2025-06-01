@@ -4,7 +4,7 @@ import joblib
 import io
 from minio import Minio
 import numpy as np
-from typing import List, Optional
+from typing import List, Optional, Any
 import time
 import pandas as pd
 import xgboost as xgb  # Add XGBoost import
@@ -25,7 +25,7 @@ last_model_load_time = 0
 MODEL_RELOAD_INTERVAL = 300  # Reload model every 5 minutes
 
 class PredictionInput(BaseModel):
-    trip_id: int
+    trip_id: Any  # Changed from int to Any to accept any type of identifier and accept trip ids that are not numbers
     timestamp: str
     peak_hour: bool
     sine_time: float

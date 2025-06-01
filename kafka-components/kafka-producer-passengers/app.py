@@ -66,7 +66,7 @@ def get_passengers():
             # for testing does not include null shape ids
             running_in = 0
             running_out = 0
-            for _, row in df[(df['trip_id'] == trip_id) & ~(df['shape_id'].isna()) & (df['route_short_name'].isin(["5", "8", "5/", "2"]))].iterrows():
+            for _, row in df[(df['trip_id'] == trip_id) & ~(df['shape_id'].isna()) & ~(df['route_short_name'].isin(["5", "8", "5/", "2"]))].iterrows():
                 # extract relevant information for each row which corresponds to a stop
                 shape_id = row.loc['shape_id']
                 trip_idx = trip_id
