@@ -63,9 +63,6 @@ button_html = f'''
             background-color: #004d99;
         }}
     </style>
-    <a href="data:application/pdf;base64,{b64}" download="Porzio_CV_pub copy.pdf" class="button">📄 Download Full Report</a>
-    <a href="{LINKEDIN}" class="button" target="_blank">🔗 LinkedIn</a>
-    <a href="{GITHUB}" class="button" target="_blank">💻 GitHub - FullCode</a>
 '''
 
 # st.markdown(button_html, unsafe_allow_html=True)
