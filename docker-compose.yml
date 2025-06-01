@@ -54,9 +54,6 @@ services:
     build:
       context: ./kafka-components
       dockerfile: ./kafka-producer-passengers/Dockerfile
-    env_file:
-      - path: ./kafka-components/kafka-producer-passengers/.env
-        required: false
     depends_on:
       - kafka
       - db
@@ -140,9 +137,6 @@ services:
     build:
       context: ./kafka-components
       dockerfile: ./kafka-producer-traffic/Dockerfile
-    env_file:
-      - path: ./kafka-components/kafka-producer-traffic/.env
-        required: false
     depends_on:
       - kafka
       - kafka-consumer-passengers
@@ -273,7 +267,6 @@ services:
       - db
       - minio
       - prediction-service
-
   dask-scheduler:
     build:
       context: ./ml-model
