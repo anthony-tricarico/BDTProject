@@ -4,7 +4,8 @@ WORKDIR /app
 # COPY app.py .
 COPY kafka-producer-gps/gps.py .
 COPY utils/ utils/
+COPY kafka-producer-gps/requirements.txt .
 
-RUN pip install kafka-python requests sqlalchemy psycopg2-binary numpy
+RUN pip install -r requirements.txt
 
 CMD ["python", "-u", "gps.py"]

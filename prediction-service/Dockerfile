@@ -3,8 +3,9 @@ FROM python:3.10-slim
 WORKDIR /app
 
 COPY prediction_service.py .
+COPY requirements.txt .
 
-RUN pip install fastapi uvicorn scikit-learn joblib minio numpy pydantic pandas xgboost>=1.7.0
+RUN pip install -r requirements.txt
 
 # Force Python to run unbuffered
 ENV PYTHONUNBUFFERED=1

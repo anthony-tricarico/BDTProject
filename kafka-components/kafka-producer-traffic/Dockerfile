@@ -5,7 +5,8 @@ WORKDIR /app
 COPY kafka-producer-traffic/traffic.py .
 # COPY kafka-producer-traffic/.env .
 COPY utils/ utils/
+COPY kafka-producer-traffic/requirements.txt .
 
-RUN pip install kafka-python requests sqlalchemy psycopg2-binary python-dotenv redis tenacity
+RUN pip install -r requirements.txt
 
 CMD ["python", "-u", "traffic.py"]
