@@ -136,7 +136,10 @@ try:
     ).encode(
         x=alt.X('hour:T', 
                 title='Hour', 
-                axis=alt.Axis(format='%H:%M', labelAngle=-45),
+                axis=alt.Axis(
+                    format='%H:%M',
+                    labelAngle=-45
+                ),
                 scale=alt.Scale(padding=0.2)),  # Add padding between bars
         y=alt.Y('passengers:Q', 
                 title='Number of Passengers',

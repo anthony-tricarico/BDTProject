@@ -10,7 +10,7 @@ The first step to run the app locally is to clone the main branch of the GitHub 
 git clone https://github.com/tricarico672/BDTProject.git
 ```
 
-To run the app locally make sure that you have an active instance of Docker with its daemon running in the background and navigate to the directory where you downloaded the repo locally. Once inside the repo you now have to make the following choice before moving on with starting the program: do I want to use real traffic data provided by Google Maps or do I want to use synthetic traffic data?
+To run the app locally make sure that you have an active instance of Docker with its daemon running in the background and navigate to the directory where you downloaded the repo locally. Once inside the repo you now have to answer the following question before moving on with starting the program: do I want to use real traffic data provided by Google Maps?
 
 ## In case your answer is "Yes"
 
@@ -26,7 +26,7 @@ this will set up the required API keys as environment variables in the scripts t
 
 ## In case your answer is "No"
 
-No further action is required from you at this point and you can move on to the next section.
+No further action is required from you at this point and you can move on to the next section and the app will take care of generating synthetic traffic data.
 
 ## Building the app
 
@@ -50,7 +50,7 @@ This will ensure the correct removal of all volumes and make sure that whenever 
 
 ## Accessing the Streamlit Dashboard
 
-After the project has been built you can then visualize the main Streamlit dashboard by connecting to `http://localhost:8501`. It is recommended to wait a few minutes for all components to initialize correctly before beginning to use the dashboard interactively. You can check out more detailed information about the dashboard by reading its dedicated `README.md` file located in the `streamlit` directory.
+After the project has been built you can then visualize the main Streamlit dashboard by connecting to `http://localhost:8501`. It is recommended to wait a few minutes for all components to initialize correctly before beginning to use the dashboard interactively. You can check out more detailed information about the dashboard by reading its dedicated `README.md` file located in the `streamlit` directory. For a seamless experience, we recommend using Google Chrome as the browser to visualize the dashboard correctly.
 
 ### Quick Streamlit Tour
 
@@ -62,11 +62,15 @@ If you can't wait for the app to build and in the meanwhile you want to learn mo
   <img src="data/assets/BusMap.gif" width="500"/>
 </p>
 
+This component is experimental. In the current implementation, it allows to visualize the route travelled by each bus. It offers a convenient dropdown menu that allows for the selection of a specific route to visualize.
+
 #### Analytics
 
 <p align="center">
   <img src="data/assets/Analytics.gif" width="500"/>
 </p>
+
+This page allows to visualize how many passengers are getting on and off buses and offers the possibility to filter aggregated results by route and by stop if needed.
 
 #### Forecasts
 
@@ -74,11 +78,17 @@ If you can't wait for the app to build and in the meanwhile you want to learn mo
   <img src="data/assets/Forecast.gif" width="500"/>
 </p>
 
+This page allows to visualize forecasts for a specific route as different parameters are varied. For instance, it is possible to set a different temperature, change the probability of precipitation or change the weather code representing the weather conditions.
+
 #### Predictions
 
 <p align="center">
   <img src="data/assets/Prediction.gif" width="500"/>
 </p>
+
+This page allows to exploit the trained model to see its outputs as different parameters are varied. It offers more flexibility compared to the forecasts page as it also allows for the arbitrary selection of any time of the day.
+
+**DISCLAIMER**: we are aware of the current limitations of the model as sometimes its outputs are not completely reliable. However, we are also aware of the fact that the synthetic data used to train the model do not possess enough embedded structure for the predictors to work well in the model. We expect this model to work much better in a real context.
 
 # Common Issues and Troubleshooting
 
@@ -159,3 +169,11 @@ I need to generate prediction data according to the data from Trentino Trasporti
 9. Make sure that the data generated is realistic. This means take into account that more tickets will be validated to reach schools and hospitals (this information is accessible from the school and hospital fields where 1 indicates the presence of a school or hospital on the route). Also do not change any fields that have been given to you, meaning do not change any of the data that is already in the file, just add the new columns as instructed so far.
 10. Possibly, include as much weather variation as possible but be mindful not to include two completely different forecasts for timestamps that are closer together in time.
 11. Finally, produce a second dataset similar to the first one. However, I would like the first one to be only for weekdays (so it should have a 0 in the weekend column) while the second one should have a 1 in the weekend column. This will help me generalize also for trips happening during weekends. This dataset will have to follow the same rules and should contain the same exact columns as the first one. However, make sure that during weekends less people use transportation in the morning (unless there is an event) and more people use transportation in the afternoon and evening. Also, on weekends there is no school or work so adjust your generated predictions accordingly.
+
+## Literature on the Topic
+
+Some choices made in the prompt to generate the data were informed by the available literature on the topic, even though studies were run in different geographical regions compared to the one considered for the current implementation. Below is the list of references (in IEEE format) used to justify some of the choices made in the prompt:
+
+[1] K. M. Nissen et al., “How does weather affect the use of public transport in Berlin?,” Environ. Res. Lett., vol. 15, no. 8, p. 085001, Jul. 2020, doi: 10.1088/1748-9326/ab8ec3.
+[2] M. Wei, J. Corcoran, T. Sigler, and Y. Liu, “Modeling the Influence of Weather on Transit Ridership: A Case Study from Brisbane, Australia,” Transportation Research Record, vol. 2672, no. 8, pp. 505–510, Dec. 2018, doi: 10.1177/0361198118777078.
+[3] J. Feng, X. Li, B. Mao, Q. Xu, and Y. Bai, “Weighted Complex Network Analysis of the Different Patterns of Metro Traffic Flows on Weekday and Weekend,” Discrete Dynamics in Nature and Society, vol. 2016, no. 1, p. 9865230, 2016, doi: 10.1155/2016/9865230.

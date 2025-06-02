@@ -4,8 +4,8 @@ import base64
 
 # ---- PERSONAL INFO ----
 NAME = "Trento's Public Transportations: Routes and Buses Real-time Congestion Tracker"
-DESCRIPTION = "Data Science MSc | University Of Trento | Big Data Technology Project"
-DESCRIPTION2 = """Hi! We are three students from the Data Science MSC. We designed this big data system to monitor congestion levels in public transit systems 
+DESCRIPTION = "Data Science MSc | University Of Trento | Big Data Technologies Project"
+DESCRIPTION2 = """Hi! We are three students from the Data Science MSc. We designed this big data system to monitor congestion levels in public transit systems 
 across the city of Trento in real-time. With this project we tried to detect bottlenecks or service disruptions, applying predictive models that can forecast 
 peak usage times. The aim of this ambitious idea was to help and provide a consistent guide for transit authorities in order to implement optimal vehicle
 distribution and scheduling, ultimately improving commuter experiences and reducing wait times."""
