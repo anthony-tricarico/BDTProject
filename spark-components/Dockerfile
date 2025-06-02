@@ -36,15 +36,3 @@ CMD ["spark-submit", \
      "--conf", "spark.driver.extraJavaOptions=-Dio.netty.tryReflectionSetAccessible=true", \
      "--conf", "spark.executor.extraJavaOptions=-Dio.netty.tryReflectionSetAccessible=true", \
      "spark_streaming_raw_to_sql.py"] 
-
-# CMD ["spark-submit", \
-#      "--master", "local[*]", \
-#      "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.postgresql:postgresql:42.7.1", \
-#      "--driver-class-path", "/opt/spark/jars/postgresql-42.7.1.jar", \
-#      "--conf", "spark.sql.streaming.checkpointLocation=/tmp/checkpoint", \
-#      "--conf", "spark.sql.shuffle.partitions=4", \
-#      "--conf", "spark.streaming.stopGracefullyOnShutdown=true", \
-#      "--conf", "spark.hadoop.fs.defaultFS=file:///", \
-#      "--conf", "spark.driver.extraJavaOptions=-Dio.netty.tryReflectionSetAccessible=true", \
-#      "--conf", "spark.executor.extraJavaOptions=-Dio.netty.tryReflectionSetAccessible=true", \
-#      "spark_streaming_ml_to_sql.py"]

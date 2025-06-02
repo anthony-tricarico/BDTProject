@@ -32,7 +32,8 @@ time_range = st.slider(
     min_value=datetime.strptime("06:00", "%H:%M").time(),
     max_value=datetime.strptime("22:00", "%H:%M").time(),
     value=(datetime.strptime("06:00", "%H:%M").time(), datetime.strptime("22:00", "%H:%M").time()),
-    format="HH:mm"
+    format="HH:mm",
+    step=timedelta(minutes=60)
 )
 
 # Route and stop filters

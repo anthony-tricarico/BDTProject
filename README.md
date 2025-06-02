@@ -1,6 +1,6 @@
-# BDTProject
+# Real-Time Congestion Tracking for Public Transportation
 
-Repository for the Big Data Technologies Project
+Welcome to the repository for the Big Data Technologies Project! In this project our team tried to develop a scalable big data application with real-time functionalities. The objective was to provide authorities with the tools necessary to understand how...
 
 # Setup
 

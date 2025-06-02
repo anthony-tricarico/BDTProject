@@ -1,70 +1,53 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
+from sqlalchemy import create_engine
 
 st.title("Congestion Tracker")
-
-#st.markdown("# Page 1 ❄️")
-
-#Sidebar settings
-st.sidebar.markdown("Congestion Tracker")
-
-st.info("🚦 Smart Route Suggestion: Least Congested Bus Route")
-
 # --------------------------
-# Simulated route data
+# Real Data from PostgreSQL
 # --------------------------
-routes = {
-    "Route A": [
-        {"lat": 46.06612, "lon": 11.15504},
-        {"lat": 46.06639, "lon": 11.15629},
-        {"lat": 46.06642, "lon": 11.15679},
-    ],
-    "Route B": [
-        {"lat": 46.06612, "lon": 11.15504},
-        {"lat": 46.06636, "lon": 11.15713},
-        {"lat": 46.06475, "lon": 11.15872},
-    ],
-    "Route C": [
-        {"lat": 46.06612, "lon": 11.15504},
-        {"lat": 46.06462, "lon": 11.15916},
-        {"lat": 46.06482, "lon": 11.15947},
-    ],
-}
+POSTGRES_URL = "postgresql+psycopg2://postgres:example@db:5432/raw_data"
+engine = create_engine(POSTGRES_URL)
 
-# --------------------------
-# Simulate congestion levels for each segment in each route
-# --------------------------
-congestion_colors = {
-    0: [0, 255, 0],
-    1: [255, 255, 0],
-    2: [255, 0, 0]
-}
+@st.cache_data(ttl=60)
+def load_congestion_data():
+    df = pd.read_sql("SELECT * FROM congestion_by_route ORDER BY timestamp_x DESC", engine)
+    return df
 
-def simulate_congestion(route):
-    levels = np.random.choice([0, 1, 2], size=len(route)-1, p=[0.5, 0.3, 0.2])
-    score = np.mean(levels)  # Average congestion
-    return levels, score
+def update_congestion_by_route():
+    query = """
+    SELECT 
+        f.timestamp_x,
+        f.congestion_rate,
+        f.traffic_level,
+        r.route_short_name
+    FROM feature_table f
+    JOIN trips t ON f.trip_id_x = t.trip_id
+    JOIN routes r ON t.route_id = r.route_id
+    """
+    df_new = pd.read_sql(query, engine)
+    df_new.dropna(inplace=True)
+    df_new.to_sql("congestion_by_route", engine, if_exists="replace", index=False)
+    return len(df_new)
 
-# --------------------------
-# User input
-# --------------------------
-origin = st.selectbox("Select origin stop:", ["Piazza Dante"])
-destination = st.selectbox("Select destination stop:", ["Università Centrale"])
+if st.button("🔄 Refresh"):
+    with st.spinner("Loading new data..."):
+        rows = update_congestion_by_route()
+    st.success(f"✅ Table updated with {rows} rows.")
 
-# --------------------------
-# Calculate congestion scores for all routes
-# --------------------------
-scores = {}
-congestion_by_route = {}
+try:
+    df = load_congestion_data()
+except Exception as e:
+    st.error(f"Error while loading data: {e}")
+    st.stop()
 
-for name, coords in routes.items():
-    levels, score = simulate_congestion(coords)
-    scores[name] = score
-    congestion_by_route[name] = levels
+st.subheader("📋 Filter data by route")
+selected_route = st.selectbox("Select a route", df["route_short_name"].unique())
+filtered_df = df[df["route_short_name"] == selected_route]
 
-# --------------------------
-# Recommend route
-# --------------------------
-best_route = min(scores, key=scores.get)
-st.success(f"🚍 Recommended Route: **{best_route}** (Least congested)")
+if filtered_df.empty:
+    st.warning("No data is available for this route.")
+else:
+    # shows latest 10 values of the dataframe
+    st.dataframe(filtered_df.sort_values("timestamp_x", ascending=False).head(10), hide_index=True)

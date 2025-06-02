@@ -4,9 +4,6 @@ st.title("settings")
 
 #st.markdown("# Page 1 ❄️")
 
-#Sidebar settings
-st.sidebar.markdown("settings")
-
 st.subheader("⚠️ Anomaly Detection")
 st.write("Unusual traffic patterns or sensor readings.")
 st.dataframe({
