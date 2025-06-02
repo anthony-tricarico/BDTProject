@@ -24,7 +24,7 @@ def get_db_connection():
 st.sidebar.markdown("Analytics")
 
 # Date filter
-selected_date = st.date_input("Select Date", datetime.now().date())
+selected_date = st.date_input("Select Date", datetime.now().date() + timedelta(days=1))
 
 # Time range filter using slider
 time_range = st.slider(

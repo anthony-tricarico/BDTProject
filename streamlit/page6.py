@@ -237,7 +237,7 @@ def main():
         is_weekend = selected_date.weekday() >= 5  # 5 is Saturday, 6 is Sunday
         
         # Peak hour (determined by time)
-        peak_hour = True if (selected_time.hour >= 7 and selected_time.hour <= 9) or (selected_time.hour >= 17 and selected_time.hour <= 19) else False
+        peak_hour = True if (selected_time.hour >= 7 and selected_time.hour <= 9) or (selected_time.hour >= 16 and selected_time.hour <= 18) else False
         
         # Weather and traffic conditions
         temperature = st.number_input("Temperature (°C)", min_value=-50.0, max_value=50.0, value=20.0)
