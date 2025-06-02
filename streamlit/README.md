@@ -112,25 +112,14 @@ The application connects to a PostgreSQL database with the following default con
 - Host: db
 - Port: 5432
 
-### Docker Support
+### Theme Configuration
 
-The application includes a Dockerfile for containerized deployment.
+The application uses a custom dark theme configuration located in `.streamlit/config.toml`. The theme includes:
 
-## Getting Started
-
-1. Install the required dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-2. Run the Streamlit application:
-
-```bash
-streamlit run main.py
-```
-
-3. Access the application through your web browser at `http://localhost:8501`
+- Dark mode as default
+- Custom color scheme optimized for readability
+- Consistent styling across all pages
+- Accent colors for interactive elements
 
 ## Data Sources
 

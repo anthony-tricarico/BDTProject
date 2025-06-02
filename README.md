@@ -48,6 +48,38 @@ docker compose down -v
 
 This will ensure the correct removal of all volumes and make sure that whenever the app is started again it starts from a clean state.
 
+## Accessing the Streamlit Dashboard
+
+After the project has been built you can then visualize the main Streamlit dashboard by connecting to `http://localhost:8501`. It is recommended to wait a few minutes for all components to initialize correctly before beginning to use the dashboard interactively. You can check out more detailed information about the dashboard by reading its dedicated `README.md` file located in the `streamlit` directory.
+
+### Quick Streamlit Tour
+
+If you can't wait for the app to build and in the meanwhile you want to learn more about the dashboard this section will showcase the main functionalities of the dashboard.
+
+#### Bus Map
+
+<p align="center">
+  <img src="data/assets/BusMap.gif" width="500"/>
+</p>
+
+#### Analytics
+
+<p align="center">
+  <img src="data/assets/Analytics.gif" width="500"/>
+</p>
+
+#### Forecasts
+
+<p align="center">
+  <img src="data/assets/Forecast.gif" width="500"/>
+</p>
+
+#### Predictions
+
+<p align="center">
+  <img src="data/assets/Prediction.gif" width="500"/>
+</p>
+
 # Common Issues and Troubleshooting
 
 This section outlines the most common issues found when testing the program along with some easy ways to fix them.
@@ -62,7 +94,7 @@ env_file:
     required: false
 ```
 
-To solve this error it was sufficient to make sure that we were running the latest version available of Docker Desktop (v4.41.2) and the Docker Engine (v28.1.1) since the feature making `.env` files optional using the `required` field was introduced in Docker Compose version 2.24.0 as detailed in the official [Documentation](https://docs.docker.com/compose/how-tos/environment-variables/set-environment-variables/)
+To solve this error it was sufficient to make sure that we were running the latest version available of Docker Desktop (v4.41.2) and the Docker Engine (v28.1.1) since the feature making `.env` files optional using the `required` field was introduced in Docker Compose version 2.24.0 as detailed in the official [Documentation](https://docs.docker.com/compose/how-tos/environment-variables/set-environment-variables/).
 
 ## CPU Overload
 
@@ -94,7 +126,7 @@ Below we report CPU and memory usage metrics relative to a `SLEEP` parameter of 
 
 # Additional Information about the Current Implementation
 
-This section contains additional information as to how we reached the current implementation and the data that is being used in the app.
+This section contains additional information as to how we reached the current implementation and the data that is being used in the app. To learn more details about the way individual components work in the program and the tasks they carry out, please read the `README.md` file contained in each service's directory.
 
 ## Data
 

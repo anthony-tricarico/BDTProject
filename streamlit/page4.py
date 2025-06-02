@@ -20,9 +20,6 @@ def get_db_connection():
         port="5432"
     )
 
-#Sidebar settings
-st.sidebar.markdown("Analytics")
-
 # Date filter
 selected_date = st.date_input("Select Date", datetime.now().date() + timedelta(days=1))
 
@@ -188,13 +185,19 @@ try:
         domainOpacity=0.8,
         ticks=True,
         tickOffset=5,
-        tickWidth=2
+        tickWidth=2,
+        labelColor='#FAFAFA',  # Light text color for axis labels
+        titleColor='#FAFAFA'   # Light text color for axis titles
     ).configure_legend(
-        strokeColor='gray',
-        fillColor='#FFFFFF',
+        strokeColor='#262730',
+        fillColor='#262730',   # Dark background matching the theme
         padding=10,
         cornerRadius=5,
-        orient='top'
+        orient='top',
+        labelColor='#FAFAFA',  # Light text color for legend labels
+        titleColor='#FAFAFA'   # Light text color for legend title
+    ).configure_title(
+        color='#FAFAFA'        # Light text color for chart title
     )
     
     st.altair_chart(final_chart, use_container_width=True)
