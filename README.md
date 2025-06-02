@@ -175,5 +175,7 @@ I need to generate prediction data according to the data from Trentino Trasporti
 Some choices made in the prompt to generate the data were informed by the available literature on the topic, even though studies were run in different geographical regions compared to the one considered for the current implementation. Below is the list of references (in IEEE format) used to justify some of the choices made in the prompt:
 
 [1] K. M. Nissen et al., “How does weather affect the use of public transport in Berlin?,” Environ. Res. Lett., vol. 15, no. 8, p. 085001, Jul. 2020, doi: 10.1088/1748-9326/ab8ec3.
+
 [2] M. Wei, J. Corcoran, T. Sigler, and Y. Liu, “Modeling the Influence of Weather on Transit Ridership: A Case Study from Brisbane, Australia,” Transportation Research Record, vol. 2672, no. 8, pp. 505–510, Dec. 2018, doi: 10.1177/0361198118777078.
+
 [3] J. Feng, X. Li, B. Mao, Q. Xu, and Y. Bai, “Weighted Complex Network Analysis of the Different Patterns of Metro Traffic Flows on Weekday and Weekend,” Discrete Dynamics in Nature and Society, vol. 2016, no. 1, p. 9865230, 2016, doi: 10.1155/2016/9865230.
