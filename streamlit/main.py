@@ -13,8 +13,8 @@ DESCRIPTION3= "If you have any questions for us or you want contribute to this p
 EMAIL1 = "luisa.porzio@studenti.unitn.it"
 EMAIL2 = "virginia.dimauro@studenti.unitn.it"
 EMAIL3 = "anthony.tricarico@studenti.unitn.it"
-LINKEDIN = "https://www.linkedin.com/in/luisa-porzio-a1401b244/"
-GITHUB = "https://github.com/LuPorzio"
+#LINKEDIN
+GITHUB = "https://github.com/tricarico672/BDTProject"
 
 
 # ---- LAYOUT ----
@@ -63,10 +63,9 @@ button_html = f'''
             background-color: #004d99;
         }}
     </style>
-    <a href="data:application/pdf;base64,{b64}" download="Porzio_CV_pub copy.pdf" class="button">📄 Download Full Report</a>
-    <a href="{LINKEDIN}" class="button" target="_blank">🔗 LinkedIn</a>
+    <a href="{GITHUB}" class="button">📄 Download Full Report</a>
     <a href="{GITHUB}" class="button" target="_blank">💻 GitHub - FullCode</a>
 '''
 
-# st.markdown(button_html, unsafe_allow_html=True)
+st.markdown(button_html, unsafe_allow_html=True)
 st.image('images/Screenshot 2025-05-19 at 14.07.06.png', width=1000)

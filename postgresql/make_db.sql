@@ -62,14 +62,14 @@ CREATE TABLE IF NOT EXISTS events (
 );
 
 CREATE TABLE IF NOT EXISTS weather (
-    measurement_id SERIAL PRIMARY KEY,
-    timestamp TIMESTAMP NOT NULL,
-    latitude DOUBLE PRECISION,
-    longitude DOUBLE PRECISION,
-    weather_code INTEGER,
-    precipitation_probability DOUBLE PRECISION,
-    temperature DOUBLE PRECISION,
-    hour TIMESTAMP
+	measurement_id SERIAL PRIMARY KEY,
+	timestamp TIMESTAMP NOT NULL,
+	latitude DOUBLE PRECISION,
+	longitude DOUBLE PRECISION,
+	weather_code INTEGER,
+	precipitation_probability DOUBLE PRECISION,
+	temperature DOUBLE PRECISION,
+	hour TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS feature_table (

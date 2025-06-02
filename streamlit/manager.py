@@ -12,7 +12,7 @@ page5 = st.Page("page5.py", title="Anomalies", icon="⚠️")
 page6 = st.Page("page6.py", title="Prediction", icon="🔮")
 
 # Set up navigation
-pgl = st.navigation([main, page1, page2, page3, page4, page5, page6])
+pgl = st.navigation([main, page1, page2, page4, page5, page6])
 
 # Run the selected page
 pgl.run()

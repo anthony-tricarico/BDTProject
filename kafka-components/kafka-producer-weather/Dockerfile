@@ -4,7 +4,8 @@ WORKDIR /app
 
 COPY kafka-producer-weather/weather.py .
 COPY utils/ utils/
+COPY kafka-producer-weather/requirements.txt .
 
-RUN pip install kafka-python requests numpy
+RUN pip install -r requirements.txt
 
 CMD ["python", "weather.py"]

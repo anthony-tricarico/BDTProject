@@ -1,0 +1,9 @@
+fastapi 
+uvicorn 
+scikit-learn 
+joblib 
+minio 
+numpy 
+pydantic 
+pandas 
+xgboost>=1.7.0

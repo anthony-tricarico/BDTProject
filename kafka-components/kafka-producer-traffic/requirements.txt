@@ -1,0 +1,7 @@
+ kafka-python 
+ requests 
+ sqlalchemy 
+ psycopg2-binary 
+ python-dotenv 
+ redis 
+ tenacity

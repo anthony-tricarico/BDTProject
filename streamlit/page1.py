@@ -2,58 +2,15 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 from sqlalchemy import create_engine
+import altair as alt
 
-# UI iniziale
+# UI setup
 st.set_page_config(page_title="Congestion Tracker", layout="wide")
 st.title("Congestion Tracker")
 st.sidebar.markdown("Congestion Tracker")
-st.info("🚦 Smart Route Suggestion: Least Congested Bus Route")
 
 # --------------------------
-# Simulated route data
-# --------------------------
-routes = {
-    "Route A": [
-        {"lat": 46.06612, "lon": 11.15504},
-        {"lat": 46.06639, "lon": 11.15629},
-        {"lat": 46.06642, "lon": 11.15679},
-    ],
-    "Route B": [
-        {"lat": 46.06612, "lon": 11.15504},
-        {"lat": 46.06636, "lon": 11.15713},
-        {"lat": 46.06475, "lon": 11.15872},
-    ],
-    "Route C": [
-        {"lat": 46.06612, "lon": 11.15504},
-        {"lat": 46.06462, "lon": 11.15916},
-        {"lat": 46.06482, "lon": 11.15947},
-    ],
-}
-
-# --------------------------
-# Simulate congestion levels
-# --------------------------
-def simulate_congestion(route):
-    levels = np.random.choice([0, 1, 2], size=len(route)-1, p=[0.5, 0.3, 0.2])
-    score = np.mean(levels)
-    return levels, score
-
-origin = st.selectbox("Select origin stop:", ["Piazza Dante"])
-destination = st.selectbox("Select destination stop:", ["Università Centrale"])
-
-scores = {}
-congestion_by_route_simulated = {}
-
-for name, coords in routes.items():
-    levels, score = simulate_congestion(coords)
-    scores[name] = score
-    congestion_by_route_simulated[name] = levels
-
-best_route = min(scores, key=scores.get)
-st.success(f"🚍 Recommended Route: **{best_route}** (Least congested)")
-
-# --------------------------
-# Dati reali da PostgreSQL
+# Real data from PostgreSQL
 # --------------------------
 POSTGRES_URL = "postgresql+psycopg2://postgres:example@db:5432/raw_data"
 engine = create_engine(POSTGRES_URL)
@@ -73,28 +30,83 @@ def update_congestion_by_route():
     FROM feature_table f
     JOIN trips t ON f.trip_id_x = t.trip_id
     JOIN routes r ON t.route_id = r.route_id
+    WHERE f.congestion_rate IS NOT NULL
     """
     df_new = pd.read_sql(query, engine)
     df_new.dropna(inplace=True)
     df_new.to_sql("congestion_by_route", engine, if_exists="replace", index=False)
     return len(df_new)
 
-if st.button("🔄 Aggiorna"):
-    with st.spinner("Aggiornamento in corso..."):
+if st.button("🔄 Refresh"):
+    with st.spinner("Loading new data..."):
         rows = update_congestion_by_route()
-    st.success(f"✅ Tabella aggiornata con {rows} righe.")
+    st.success(f"✅ Table updated with {rows} rows.")
 
 try:
     df = load_congestion_data()
 except Exception as e:
-    st.error(f"Errore nel caricamento dei dati: {e}")
+    st.error(f"Error while loading data: {e}")
     st.stop()
 
-st.subheader("📋 Filtra dati per route")
-selected_route = st.selectbox("Seleziona una route", df["route_short_name"].unique())
-filtered_df = df[df["route_short_name"] == selected_route]
+st.subheader("📋 Select Route")
+df["timestamp_x"] = pd.to_datetime(df["timestamp_x"])
+df = df.sort_values("route_short_name")
+
+sorted_routes = sorted(df["route_short_name"].unique(), key=lambda x: int(x) if x.isdigit() else x)
+selected_route = st.selectbox("Select a route", sorted_routes)
+
+st.subheader("📅 Select Date")
+available_dates = df[df["route_short_name"] == selected_route]["timestamp_x"].dt.date.unique()
+selected_date = st.selectbox("Available dates", sorted(available_dates))
+
+# Filter data by route and exact date
+filtered_df = df[(df["route_short_name"] == selected_route) & (df["timestamp_x"].dt.date == selected_date)].copy()
+filtered_df["hour"] = filtered_df["timestamp_x"].dt.hour
 
 if filtered_df.empty:
-    st.warning("Nessun dato disponibile per questa route.")
+    st.warning("No data is available for this route and date.")
 else:
-    st.dataframe(filtered_df.sort_values("timestamp_x", ascending=False))
+    st.dataframe(filtered_df.sort_values("timestamp_x", ascending=False), hide_index=True)
+
+    st.subheader("📊 Congestion Overview by Hour")
+    hourly_avg = filtered_df.groupby("hour")["congestion_rate"].mean().reset_index()
+
+    chart = alt.Chart(hourly_avg).mark_bar(color="steelblue").encode(
+        x=alt.X("hour:O", title="Hour of Day"),
+        y=alt.Y("congestion_rate:Q", title="Average Congestion Rate")
+    ).properties(
+        width=700,
+        height=400,
+        title=f"Average Congestion Rate by Hour - {selected_date} - {selected_route}"
+    ) + alt.Chart(pd.DataFrame({"y": [1.0]})).mark_rule(color="red", strokeDash=[4, 4]).encode(y="y")
+
+    st.altair_chart(chart, use_container_width=True)
+
+    st.subheader("🚌 Suggested Additional Buses")
+    high_cong_hours = hourly_avg[hourly_avg["congestion_rate"] > 1.0]["hour"].tolist()
+
+    merged_blocks = []
+    if high_cong_hours:
+        block = [high_cong_hours[0]]
+        for h in high_cong_hours[1:]:
+            if h == block[-1] + 1:
+                block.append(h)
+            else:
+                merged_blocks.append((block[0], block[-1]))
+                block = [h]
+        merged_blocks.append((block[0], block[-1]))
+
+    suggestions = []
+    for start, end in merged_blocks:
+        suggestions.append({
+            "Date": selected_date.strftime("%A, %d %B %Y"),
+            "Time Interval": f"{start}:00 - {end + 1}:00",
+            "Suggested Buses": 1,
+            "Reason": "Avg. congestion > 1.0"
+        })
+
+    if suggestions:
+        suggestions_df = pd.DataFrame(suggestions)
+        st.dataframe(suggestions_df, use_container_width=True, hide_index=True)
+    else:
+        st.success("✅ No time intervals require additional buses on this date.")

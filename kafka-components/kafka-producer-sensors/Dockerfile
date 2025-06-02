@@ -5,7 +5,8 @@ WORKDIR /app
 
 COPY kafka-producer-sensors/sensors_producer.py .
 COPY utils/ utils/
+COPY kafka-producer-sensors/requirements.txt .
 
-RUN pip install kafka-python requests
+RUN pip install -r requirements.txt
 
 CMD ["python", "sensors_producer.py"]
