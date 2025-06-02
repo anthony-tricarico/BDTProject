@@ -56,6 +56,14 @@ After the project has been built you can then visualize the main Streamlit dashb
 
 If you can't wait for the app to build and in the meanwhile you want to learn more about the dashboard this section will showcase the main functionalities of the dashboard.
 
+#### Congestion Tracker
+
+<p align="center">
+  <img src="data/assets/CongestionTracker.gif" width="500"/>
+</p>
+
+This page allows to visualize the results from real-time recorded congestion on buses and guides authorities in the allocation of buses on different routes. The decision process is automated as much as possible by providing automated suggestions on how many buses to add to each route based on the congestion level recorded.
+
 #### Bus Map
 
 <p align="center">
