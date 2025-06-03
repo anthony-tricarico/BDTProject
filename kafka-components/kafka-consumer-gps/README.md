@@ -41,4 +41,3 @@ A `Dockerfile` is provided to containerize the application. Ensure Docker is ins
 
 - Ensure the Kafka server and PostgreSQL database are running and accessible from the environment where the script is executed.
 - The GPS data provides real-time location tracking of buses, which can be used for route visualization, delay analysis, and integration with other data sources.
-- Adjust the database credentials and Kafka server details in the script as needed for your environment.

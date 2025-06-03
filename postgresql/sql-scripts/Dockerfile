@@ -3,8 +3,6 @@ FROM ubuntu:20.04
 # Copy SQL scripts and the shell script into the container
 WORKDIR /app
 
-# COPY sql-scripts/ sql-scripts/
-# COPY run_sql.sh .
 COPY . .
 
 # Install PostgreSQL client

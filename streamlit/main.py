@@ -44,7 +44,6 @@ with col1:
 
 with col2:
     st.image("images/BusFlow_image.png", width=230)
-    # st.image("images/Trento, monumento a Dante Alighieri (monte Bondone sullo sfondo) - L'Image Gallery.jpg", width=230)  
 
 button_html = f'''
     <style>

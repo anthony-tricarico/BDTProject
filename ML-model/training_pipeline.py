@@ -41,7 +41,6 @@ os.environ['MLFLOW_DISABLE_GIT'] = 'true'
 os.environ['GIT_PYTHON_REFRESH'] = 'quiet'
 
 def ensure_mlflow_database_exists():
-    """This function is now a no-op since the MLflow server handles database setup"""
     pass
 
 def setup_mlflow():
@@ -58,7 +57,7 @@ def setup_mlflow():
         if experiment is None:
             experiment_id = mlflow.create_experiment(
                 experiment_name,
-                artifact_location="/mlflow/artifacts"  # Match with docker-compose volume
+                artifact_location="/mlflow/artifacts"  
             )
             print(f"[MLflow] Created new experiment '{experiment_name}' with ID {experiment_id}")
         else:
@@ -87,6 +86,7 @@ print(f"[MLflow] Tracking URI: {mlflow.get_tracking_uri()}")
 # Initialize Dask client
 client = Client("dask-scheduler:8786")
 
+# Number of seats on each bus
 total_seats = 400
 
 # Call the setup function to initialize MLflow
@@ -270,23 +270,13 @@ def split_data(final_clean, test_size: float=0.3, shuffle: bool=True, random_sta
 
 
 def train_rf_model(final_clean, best_params = None):
-
-    # grid for random forest
-    # if best_params is None:
-    #     best_params = {
-    #         'criterion': 'friedman_mse',
-    #         'max_depth': 10,
-    #         'max_features': 10,
-    #         'min_samples_split': 10,
-    #         'n_estimators': 100
-    #         }
     
     # grid for regression tree
     if best_params is None:
         best_params = {
             'criterion': 'friedman_mse',
             'max_depth': 10,
-            'max_features': 'auto',  # Consider sqrt(n_features) at each split
+            'max_features': 'auto',  
             'min_samples_split': 2,  # Minimum samples required to split a node
             'min_samples_leaf': 1,   # Minimum samples required in a leaf node
             'random_state': 42       # For reproducibility

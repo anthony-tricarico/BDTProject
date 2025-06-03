@@ -48,7 +48,7 @@ Messages are published to the `sensors.topic` with the following structure:
   "timestamp": "2024-03-20T10:00:00", // ISO format timestamp from passenger prediction
   "stop_id": "123", // Stop identifier
   "route": "5", // Route number
-  "status": 1, // Sensor status (hardcoded)
+  "status": 1, // Sensor status (hardcoded) -> sensor is active
   "activation_type": 2, // Activation type (hardcoded)
   "bus_id": 42, // Bus identifier
   "trip_id": "456", // Trip identifier
@@ -69,28 +69,12 @@ Messages are published to the `sensors.topic` with the following structure:
 
 ## Usage
 
-### Running the Service
-
-The service runs automatically in the Docker environment. To start it:
-
-```bash
-docker-compose up kafka-producer-sensors
-```
-
 ### Configuration Options
 
 Set the `SLEEP` environment variable to control the rate of message production:
 
 ```bash
 SLEEP=0.1  # Produces messages with 0.1 second delay
-```
-
-### Monitoring
-
-Monitor the service logs:
-
-```bash
-docker-compose logs -f kafka-producer-sensors
 ```
 
 ## Integration
@@ -100,29 +84,6 @@ This component works in conjunction with:
 - `kafka-producer-passengers`: Source of passenger predictions
 - `kafka`: Message broker for both input and output
 - Downstream consumers of the `sensors.topic`
-
-## Development
-
-### Local Development
-
-1. Create a virtual environment:
-
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-2. Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-3. Run the service:
-
-```bash
-python sensors_producer.py
-```
 
 ## Troubleshooting
 
@@ -145,8 +106,3 @@ Common issues and solutions:
    - Adjust SLEEP value if messages are being processed too quickly/slowly
    - Monitor message queue sizes
    - Check for message processing delays
-
-4. **Deduplication Issues**:
-   - Monitor the size of the already_predicted list
-   - Check for memory usage if running for extended periods
-   - Verify prediction_id uniqueness

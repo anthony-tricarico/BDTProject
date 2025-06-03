@@ -19,15 +19,6 @@ GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", None)
 
 def get_passengers():
 
-    # with open("treemodel.pkl", "rb") as f:
-    #     model = load(f)
-
-    # with open("labelencoder.pkl", "rb") as f:
-    #     le = load(f)
-
-    # with open("treemodel_out.pkl", "rb") as f:
-    #     model_out = load(f)
-
     # get the max number of buses
     connection = create_db_connection()
 
@@ -46,11 +37,10 @@ def get_passengers():
     unique_trip_ids = list(df['trip_id'].unique())
 
     bus_deactive_list = [i for i in range(1, max_buses+1)]
+    
     # ensure we do not pop always the same element
     random.shuffle(bus_deactive_list)
     bus_active_list = []
-
-    # max_passengers_per_trip = 100  # Cap for each trip
 
     while True:
         # for each trip_id get stop and route, and assign one unique bus to the trip 
@@ -62,10 +52,11 @@ def get_passengers():
                 random.shuffle(bus_deactive_list)
                 bus_active_list = []
                 bus_active_list.append(bus_deactive_list.pop())
+
             # get smaller dataset of unique trip
+
             # for testing does not include null shape ids
-            running_in = 0
-            running_out = 0
+
             for _, row in df[(df['trip_id'] == trip_id) & ~(df['shape_id'].isna()) & ~(df['route_short_name'].isin(["5", "8", "5/", "2"]))].iterrows():
                 # extract relevant information for each row which corresponds to a stop
                 shape_id = row.loc['shape_id']
@@ -85,33 +76,6 @@ def get_passengers():
                 weekend = 1 if sim_time.weekday() >= 5 else 0
                 seconds = (sim_time - sim_time.replace(hour=0, minute=0, second=0)).total_seconds()
                 
-                # create dataframe to feed data into the model to output predictions
-                # data_x = pd.DataFrame({
-                #     'arrival_time': [seconds],
-                #     # 'stop_id': [stop],
-                #     'encoded_routes': [le.transform([str(route)])[0]],
-                #     'weekend': [weekend],
-                #     'peak_hour': [peak_hour]
-                # })
-                
-                # Ensure the prediction is not negative
-                # passenger_in = min(max(0, int(model.predict(data_x)[0])), 8)
-                # passenger_out = max(max(0, int(model_out.predict(data_x)[0])), 2)
-
-                # # --- Cap so we don't exceed the max for the trip ---
-                # if running_in + passenger_in > max_passengers_per_trip:
-                #     passenger_in = max_passengers_per_trip - running_in
-                # if running_out + passenger_out > max_passengers_per_trip:
-                #     passenger_out = max_passengers_per_trip - running_out
-
-                # # Don't allow negative predictions after capping
-                # passenger_in = max(0, passenger_in)
-                # passenger_out = max(0, passenger_out)
-
-                # running_in += passenger_in
-                # running_out += passenger_out
-                # print(GOOGLE_API_KEY)
-
                 if GOOGLE_API_KEY is not None:
                     payload = {
                         'prediction_id': pred_id,
@@ -128,7 +92,6 @@ def get_passengers():
                         'bus_id': int(bus_active_list[-1]),
                         "weekend": weekend,
                         "peak_hour": peak_hour,
-                        # "event": event,
                         "hospital": hospital,
                         "school": school
                     }
@@ -149,7 +112,6 @@ def get_passengers():
                         'bus_id': int(bus_active_list[-1]),
                         "weekend": weekend,
                         "peak_hour": peak_hour,
-                        # "event": event,
                         "hospital": hospital,
                         "school": school,
                         "traffic": row.loc['traffic_condition']

@@ -53,7 +53,6 @@ def stream_by_client(client_id: str, limit: int = 10):
     try:
         topic = "bus.passenger.predictions"
 
-        # Lock must wrap the whole consume section
         with client_locks[client_id]:
             # Create or reuse consumer
             if client_id not in client_consumers:
@@ -86,23 +85,3 @@ def stream_by_client(client_id: str, limit: int = 10):
 def filter_by_route(route: str = Query(..., description="Route to filter messages by")):
     filtered = [msg for msg in message_store if msg.get("route") == route]
     return filtered if filtered else {"message": f"No data found for route '{route}'"}
-
-@app.get("/filter-by-time-range")
-def filter_by_time_range(
-    start_time: str = Query(..., description="Start time in ISO 8601 format (e.g. '2025-05-04T10:00:00Z')"),
-    end_time: str = Query(..., description="End time in ISO 8601 format (e.g. '2025-05-04T12:00:00Z')")
-):
-    try:
-        # Parse the start and end time
-        start_dt = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
-        end_dt = datetime.fromisoformat(end_time.replace("Z", "+00:00"))
-    except ValueError:
-        return {"error": "Invalid date format. Use ISO 8601 format (e.g., '2025-05-04T10:00:00Z')"}
-    
-    # Filter messages within the time range
-    filtered_msgs = [
-        msg for msg in message_store
-        if "timestamp" in msg and parse_time(msg["timestamp"]) >= start_dt and parse_time(msg["timestamp"]) <= end_dt
-    ]
-    
-    return filtered_msgs if filtered_msgs else {"message": f"No data in the range {start_time} to {end_time}"}

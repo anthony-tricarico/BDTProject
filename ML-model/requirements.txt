@@ -9,3 +9,10 @@ boto3
 minio
 kafka-python
 joblib 
+requests 
+numpy 
+pyarrow 
+dask[distributed] 
+bokeh>=3.1.0 
+xgboost>=1.7.0 
+mlflow

@@ -22,7 +22,7 @@ def generate_sensors(msg):
         "timestamp": msg['timestamp'],
         "stop_id": msg['stop_id'],
         "route": msg['route'],
-        # hard-coded since the assumption is that 
+        # hard-coded since the assumption is that people getting out of the bus are recorded using sensors and status 1 means sensors are active
         "status": 1,
         "activation_type": 2,
         "bus_id": msg['bus_id'],

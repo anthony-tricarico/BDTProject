@@ -31,7 +31,6 @@ def is_stale_or_limited_result(data):
         routes = data.get("routes", [])
         if routes:
             duration = routes[0]["legs"][0]["duration"]["value"]
-            # Add a heuristic: if it's always ~same low value, consider it stale
             if duration < 120:  # less than 2 minutes
                 print(f"[RETRY] Duration too low: {duration}")
                 return True

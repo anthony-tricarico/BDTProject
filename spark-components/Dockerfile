@@ -12,9 +12,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the Spark streaming script
-# COPY spark_streaming.py .
 COPY spark_streaming_raw_to_sql.py .
-# COPY spark_streaming_ml_to_sql.py .
 
 # Set environment variables
 ENV SPARK_HOME=/opt/spark

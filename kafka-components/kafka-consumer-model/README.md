@@ -64,22 +64,6 @@ The service runs automatically in the Docker environment. It:
 2. Listens for new model notifications
 3. Evaluates and promotes models as needed
 
-### Manual Testing
-
-To test the service manually:
-
-```bash
-docker-compose up kafka-consumer-model
-```
-
-### Logs
-
-Monitor the service logs:
-
-```bash
-docker-compose logs -f kafka-consumer-model
-```
-
 ## Error Handling
 
 The service includes robust error handling:

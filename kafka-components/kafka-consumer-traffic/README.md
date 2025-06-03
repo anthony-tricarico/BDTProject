@@ -36,8 +36,3 @@ The `traffic_consumer.py` script connects to a Kafka topic to consume traffic da
 ## Docker
 
 A `Dockerfile` is provided to containerize the application. Ensure Docker is installed and configured to build and run the container.
-
-## Notes
-
-- Ensure the Kafka server and PostgreSQL database are running and accessible from the environment where the script is executed.
-- Adjust the database credentials and Kafka server details in the script as needed for your environment.
