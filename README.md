@@ -4,6 +4,36 @@
 
 Welcome to the repository for the Big Data Technologies Project! In this project our team tried to develop a scalable big data application with real-time functionalities. The objective was to provide transit authorities with the tools necessary to understand how to improve the allocation of buses based on the real-time and predicted demand for public transportation along multiple routes.
 
+## Table of Contents
+
+- [Tech Stack](#tech-stack)
+- [Data Pipeline and Infrastructure](#data-pipeline-and-infrastructure)
+- [Project Structure](#project-structure)
+  - [Core Application Components](#core-application-components)
+  - [Data Management](#data-management)
+  - [Processing Components](#processing-components)
+  - [Configuration and Setup](#configuration-and-setup)
+- [Getting Started](#getting-started)
+  - [Using Google Maps API](#in-case-your-answer-is-yes)
+  - [Without Google Maps API](#in-case-your-answer-is-no)
+  - [Building the App](#building-the-app)
+  - [Closing the App](#closing-the-app)
+- [Streamlit Dashboard](#accessing-the-streamlit-dashboard)
+  - [Congestion Tracker](#congestion-tracker)
+  - [Bus Map](#bus-map)
+  - [Analytics](#analytics)
+  - [Forecasts](#forecasts)
+  - [Anomalies](#anomalies)
+  - [Predictions](#predictions)
+- [Common Issues and Troubleshooting](#common-issues-and-troubleshooting)
+  - [Error Reading .env Files](#1-error-reading-from-env-files)
+  - [CPU Overload](#cpu-overload)
+  - [Dashboard Issues](#issues-related-to-some-pages-in-the-dashboard)
+- [Additional Information](#additional-information-about-the-current-implementation)
+  - [Data](#data)
+  - [Data Generation with LLMs](#data-generation-with-llms)
+  - [Literature](#literature-on-the-topic)
+
 # Tech Stack
 
 The project utilizes a diverse set of modern technologies to handle different aspects of the application. Below is a comprehensive overview of the tech stack:
