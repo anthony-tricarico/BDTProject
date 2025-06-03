@@ -174,7 +174,7 @@ Below we report CPU and memory usage metrics relative to a `SLEEP` parameter of 
 
 Based on these metrics it is recommended that Docker has access to at least 8 CPU cores and 6GB of RAM to enjoy a seamless experience.
 
-## Issues related to ome Pages in the Dashboard
+## Issues related to some Pages in the Dashboard
 
 Some pages in the dashboard might not work as intended in the first few minutes from the first startup. While we work on these issues, for the time being we ask for your patience as the dashboard has been tested to work after some minutes from the correct initialization of all components. In particular, we recommend to use the `Refresh` button emdedded in the pages. This has been found to fix most of the errors after 2-5 minutes from startup.
 
@@ -218,7 +218,7 @@ I need to generate prediction data according to the data from Trentino Trasporti
 
 ## Literature on the Topic
 
-Some choices made in the prompt to generate the data were informed by the available literature on the topic, even though studies were run in different geographical regions compared to the one considered for the current implementation. Below is the list of references (in IEEE format) used to justify some of the choices made in the prompt:
+Some choices made in the prompt to generate the data were informed by the available literature on the topic, even though studies were run in different geographical regions compared to the one considered for the current implementation. Below is the list of references (in IEEE format) used to justify some of the choices made in the prompt.
 
 [1] K. M. Nissen et al., “How does weather affect the use of public transport in Berlin?,” Environ. Res. Lett., vol. 15, no. 8, p. 085001, Jul. 2020, doi: 10.1088/1748-9326/ab8ec3.
 
