@@ -59,7 +59,6 @@ Each technology was chosen for its specific strengths and ability to handle diff
 │   └── utils/                # Notebook utilities
 ├── postgresql/               # PostgreSQL configuration
 ├── prediction-service/       # Real-time prediction API
-├── spark-checkpoint/         # Spark checkpoint storage
 ├── spark-components/         # Spark processing modules
 ├── src/                      # Source code utilities
 ├── streamlit/               # Dashboard application
@@ -99,7 +98,6 @@ Each technology was chosen for its specific strengths and ability to handle diff
 #### Processing Components
 
 - **spark-components/**: Spark processing modules for data transformation
-- **spark-checkpoint/**: Spark checkpointing directory for recovery
 
 #### Configuration and Setup
 
