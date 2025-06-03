@@ -194,6 +194,14 @@ This page allows to visualize how many passengers are getting on and off buses a
 
 This page allows to visualize forecasts for a specific route as different parameters are varied. For instance, it is possible to set a different temperature, change the probability of precipitation or change the weather code representing the weather conditions.
 
+#### Anomalies
+
+<p align="center">
+  <img src="data/assets/Anomalies.gif" width="500"/>
+</p>
+
+This page shows the main bottlenecks caused by traffic on each different route.
+
 #### Predictions
 
 <p align="center">
