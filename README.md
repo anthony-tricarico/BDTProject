@@ -32,6 +32,10 @@ The project utilizes a diverse set of modern technologies to handle different as
 
 Each technology was chosen for its specific strengths and ability to handle different aspects of the real-time data processing pipeline, from data ingestion to visualization.
 
+# Data Pipeline and Infrastructure
+
+![Pipeline](data/assets/DataPipeline.png)
+
 # Project Structure
 
 ```
