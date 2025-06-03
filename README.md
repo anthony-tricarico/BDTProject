@@ -1,6 +1,8 @@
 # Real-Time Congestion Tracking for Public Transportation
 
-Welcome to the repository for the Big Data Technologies Project! In this project our team tried to develop a scalable big data application with real-time functionalities. The objective was to provide authorities with the tools necessary to understand how to improve the allocation of buses based on the real-time and predicted demand for public transporation along multiple routes.
+![App Logo](data/assets/busflow_logo.png)
+
+Welcome to the repository for the Big Data Technologies Project! In this project our team tried to develop a scalable big data application with real-time functionalities. The objective was to provide transit authorities with the tools necessary to understand how to improve the allocation of buses based on the real-time and predicted demand for public transporation along multiple routes.
 
 # Running the app locally
 
@@ -141,6 +143,8 @@ Below we report CPU and memory usage metrics relative to a `SLEEP` parameter of 
 
 ![CPU Usage](data/assets/cpu_usage.png)
 ![Memory Usage](data/assets/ram_usage.png)
+
+Based on these metrics it is recommended that Docker has access to at least 8 CPU cores and 6GB of RAM to enjoy a seamless experience.
 
 # Additional Information about the Current Implementation
 

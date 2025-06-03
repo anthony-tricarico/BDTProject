@@ -8,6 +8,9 @@ import numpy as np
 st.set_page_config(layout="wide")
 st.title("🚌 Live Bus Route Visualization with Congestion")
 st.markdown("🔴 High Congestion | 🟡 Medium Congestion | 🟢 Low Congestion")
+st.info("This map shows real-time congestion levels for each Trip, showing the route relative to the trip and the different stops")
+st.warning("This feature is still in the experimental phase. Future app versions will solve all the visualizations bugs.")
+
 
 # Icons
 BUS_ICON_URL = "https://img.icons8.com/emoji/48/bus-emoji.png"

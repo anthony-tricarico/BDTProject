@@ -3,8 +3,8 @@ from datetime import datetime
 import time
 
 # Define the pages
-main = st.Page("main.py", title="Public Transport Congestion", icon="✉️")
-page1 = st.Page("page1.py", title="Congestion Tracker", icon="🧩")
+main = st.Page("main.py", title="Public Transport Congestion", icon="🚌")
+page1 = st.Page("page1.py", title="Real-Time Congestion Tracker", icon="🚨")
 page2 = st.Page("page2.py", title="Map", icon="🗺️")
 page3 = st.Page("page3.py", title="Forecast", icon="🕟")
 page4 = st.Page("page4.py", title="Analytics", icon="📊")

@@ -11,3 +11,5 @@ python-dotenv>=1.0.0
 altair
 pydeck
 sqlalchemy
+plotly
+pytz>=2024.1

@@ -5,9 +5,14 @@ import requests
 from datetime import datetime, timedelta
 import time
 from typing import List, Dict
+import pytz
+import altair as alt
 
 st.set_page_config(layout="wide")
 st.title("📈 Congestion Forecast")
+
+# Define Italy timezone
+ITALY_TZ = pytz.timezone('Europe/Rome')
 
 # Database connection parameters
 DB_PARAMS = {
@@ -210,10 +215,10 @@ if selected_route:
     # Calculate number of predictions needed
     num_predictions = forecast_window // interval
     
-    # Get predictions
+    # Get predictions using Italy timezone
     predictions = get_predictions_for_timeframe(
         route_short_name=selected_route,
-        start_time=datetime.now(),
+        start_time=datetime.now(ITALY_TZ),
         num_predictions=num_predictions,
         interval_minutes=interval,
         temperature=temperature,
@@ -227,11 +232,43 @@ if selected_route:
         # Create forecast DataFrame
         forecast_df = pd.DataFrame(predictions)
         
-        # Display line chart
-        st.line_chart(
-            forecast_df.set_index("timestamp")["prediction"],
-            use_container_width=True
+        # Create base chart with selection
+        selection = alt.selection_interval(bind='scales')  # Enable zoom and pan
+        
+        # Create Altair chart with 24h time format and interactivity
+        chart = alt.Chart(forecast_df).mark_line(
+            point=True  # Add points at each prediction
+        ).encode(
+            x=alt.X('timestamp:T',
+                   title='Time',
+                   axis=alt.Axis(
+                       format='%H:%M',  # 24h time format
+                       labelAngle=-45,
+                       grid=True
+                   )),
+            y=alt.Y('prediction:Q',
+                   title='Congestion Level',
+                   scale=alt.Scale(domain=[0, 1])),
+            tooltip=[
+                alt.Tooltip('timestamp:T', title='Time', format='%H:%M'),
+                alt.Tooltip('prediction:Q', title='Congestion', format='.2f')
+            ]
+        ).add_selection(
+            selection  # Add zoom and pan interaction
+        ).configure_axis(
+            grid=True,
+            gridOpacity=0.2,
+            domainOpacity=0.8,
+            labelColor='#FAFAFA',
+            titleColor='#FAFAFA'
+        ).configure_view(
+            strokeWidth=0
+        ).properties(
+            height=400
         )
+        
+        # Display the chart
+        st.altair_chart(chart, use_container_width=True)
         
         st.info(f"Showing predicted congestion for the next {forecast_window} minutes.")
         

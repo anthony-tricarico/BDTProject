@@ -13,19 +13,17 @@ DESCRIPTION3= "If you have any questions for us or you want contribute to this p
 EMAIL1 = "luisa.porzio@studenti.unitn.it"
 EMAIL2 = "virginia.dimauro@studenti.unitn.it"
 EMAIL3 = "anthony.tricarico@studenti.unitn.it"
-#LINKEDIN
 GITHUB = "https://github.com/tricarico672/BDTProject"
 
 
 # ---- LAYOUT ----
 st.set_page_config(page_title="Trento's Public Transportations: Real-time Buses Congestion", layout="wide")
 # Create two columns: 75% for text, 25% for image
-col1, col2 = st.columns([3, 1])  # You can adjust ratio here
+col1, col2 = st.columns([3, 1])  
 
 with col1:
     st.title("Trento's Public Transportations: Real-time Buses Congestion")
     st.subheader(DESCRIPTION)
-    #st.write(DESCRIPTION2)
 
     # Transparent box with main description
     st.markdown(
@@ -45,7 +43,8 @@ with col1:
     st.markdown(":rainbow[Take a look at our full code by clicking on the button below!]") 
 
 with col2:
-    st.image("images/Trento, monumento a Dante Alighieri (monte Bondone sullo sfondo) - L'Image Gallery.jpg", width=180)  # Use your own image
+    st.image("images/BusFlow_image.png", width=230)
+    # st.image("images/Trento, monumento a Dante Alighieri (monte Bondone sullo sfondo) - L'Image Gallery.jpg", width=230)  
 
 button_html = f'''
     <style>
@@ -63,9 +62,11 @@ button_html = f'''
             background-color: #004d99;
         }}
     </style>
-    <a href="{GITHUB}" class="button">📄 Download Full Report</a>
     <a href="{GITHUB}" class="button" target="_blank">💻 GitHub - FullCode</a>
 '''
 
 st.markdown(button_html, unsafe_allow_html=True)
 st.image('images/Screenshot 2025-05-19 at 14.07.06.png', width=1000)
+
+if st.button("Demo ends here!"):
+    st.balloons()

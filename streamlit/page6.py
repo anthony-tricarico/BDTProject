@@ -205,6 +205,8 @@ def calculate_sine_time(timestamp: datetime) -> float:
 
 def main():
     st.title("Bus Congestion Prediction")
+
+    st.warning("We are aware of the current limitations of the model as sometimes its outputs are not completely reliable. However, we are also aware of the fact that the synthetic data used to train the model do not possess enough embedded structure for the predictors to work well in the model. We expect this model to work much better in a real context.")
     
     # Create the predictions table if it doesn't exist
     create_predictions_table()

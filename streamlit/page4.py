@@ -7,8 +7,7 @@ import psycopg2
 from datetime import datetime, timedelta
 
 st.title("Analytics")
-
-#st.markdown("# Page 1 ❄️")
+st.info("This page shows information on passengers flow throughout the day, based on the selected route and selected stop.")
 
 # Database connection function
 def get_db_connection():

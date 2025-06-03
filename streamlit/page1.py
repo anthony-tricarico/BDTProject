@@ -4,9 +4,7 @@ import pandas as pd
 from sqlalchemy import create_engine
 import altair as alt
 
-# UI setup
-st.set_page_config(page_title="Congestion Tracker", layout="wide")
-st.title("Congestion Tracker")
+st.title("Real-Time Congestion Tracker")
 
 # --------------------------
 # Real data from PostgreSQL
@@ -35,6 +33,8 @@ def update_congestion_by_route():
     df_new.dropna(inplace=True)
     df_new.to_sql("congestion_by_route", engine, if_exists="replace", index=False)
     return len(df_new)
+
+st.info("This table shows real-time congestion rates for each trip, showing the route relative to the trip and the timestamp")
 
 if st.button("🔄 Refresh"):
     with st.spinner("Loading new data..."):
