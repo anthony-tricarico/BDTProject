@@ -32,7 +32,85 @@ The project utilizes a diverse set of modern technologies to handle different as
 
 Each technology was chosen for its specific strengths and ability to handle different aspects of the real-time data processing pipeline, from data ingestion to visualization.
 
-# Running the app locally
+# Project Structure
+
+```
+./
+├── data/                      # Data storage directory
+├── kafka-components/          # Kafka producers and consumers
+│   ├── kafka-consumer-gps/
+│   ├── kafka-consumer-model/
+│   ├── kafka-consumer-passengers/
+│   ├── kafka-consumer-sensors/
+│   ├── kafka-consumer-tickets/
+│   ├── kafka-consumer-traffic/
+│   ├── kafka-consumer-weather/
+│   ├── kafka-producer-gps/
+│   ├── kafka-producer-passengers/
+│   ├── kafka-producer-sensors/
+│   ├── kafka-producer-tickets/
+│   ├── kafka-producer-traffic/
+│   ├── kafka-producer-weather/
+│   └── utils/                 # Shared Kafka utilities
+├── ml-model/                  # Machine learning model files
+├── mlflow/                    # MLflow tracking server
+├── mong/                      # MongoDB configuration
+├── notebooks/                 # Development and testing notebooks
+│   └── utils/                # Notebook utilities
+├── postgresql/               # PostgreSQL configuration
+├── prediction-service/       # Real-time prediction API
+├── spark-checkpoint/         # Spark checkpoint storage
+├── spark-components/         # Spark processing modules
+├── src/                      # Source code utilities
+├── streamlit/               # Dashboard application
+│   ├── .streamlit/          # Streamlit configuration
+│   ├── images/              # Dashboard images
+│   ├── modules/             # Dashboard modules
+│   ├── main.py             # Main dashboard entry
+│   ├── page1.py            # Dashboard pages
+│   ├── page2.py
+│   ├── page3.py
+│   ├── page4.py
+│   ├── page5.py
+│   ├── page6.py
+│   └── manager.py          # Dashboard state management
+├── docker-compose.yml      # Container orchestration
+├── .gitignore             # Git ignore rules
+└── README.md              # Project documentation
+```
+
+### Component Description
+
+#### Core Application Components
+
+- **streamlit/**: Interactive dashboard application for visualizing bus congestion data
+- **kafka-components/**: Message brokers and processors for real-time data streaming
+- **ml-model/**: Machine learning model components for congestion prediction
+- **prediction-service/**: Real-time prediction API service
+- **mlflow/**: Model tracking, versioning, and experiment management
+
+#### Data Management
+
+- **postgresql/**: Main database configuration and schemas
+- **mong/**: MongoDB configuration for specific data types
+- **data/**: Data storage and management
+- **notebooks/**: Development and testing notebooks (not used in production)
+
+#### Processing Components
+
+- **spark-components/**: Spark processing modules for data transformation
+- **spark-checkpoint/**: Spark checkpointing directory for recovery
+
+#### Configuration and Setup
+
+- **src/**: Source code utilities and helper functions
+- **docker-compose.yml**: Container orchestration and service configuration
+- **.gitignore**: Git ignore rules for version control
+- **README.md**: Project documentation and setup instructions
+
+This structure represents a microservices architecture focused on real-time data processing and analysis, with separate components for data ingestion, processing, storage, and visualization.
+
+# Getting Started
 
 The first step to run the app locally is to clone the main branch of the GitHub repo locally on your machine by running the following command from the terminal:
 
@@ -220,8 +298,8 @@ I need to generate prediction data according to the data from Trentino Trasporti
 
 Some choices made in the prompt to generate the data were informed by the available literature on the topic, even though studies were run in different geographical regions compared to the one considered for the current implementation. Below is the list of references (in IEEE format) used to justify some of the choices made in the prompt.
 
-[1] K. M. Nissen et al., “How does weather affect the use of public transport in Berlin?,” Environ. Res. Lett., vol. 15, no. 8, p. 085001, Jul. 2020, doi: 10.1088/1748-9326/ab8ec3.
+[1] K. M. Nissen et al., "How does weather affect the use of public transport in Berlin?" Environ. Res. Lett., vol. 15, no. 8, p. 085001, Jul. 2020, doi: 10.1088/1748-9326/ab8ec3.
 
-[2] M. Wei, J. Corcoran, T. Sigler, and Y. Liu, “Modeling the Influence of Weather on Transit Ridership: A Case Study from Brisbane, Australia,” Transportation Research Record, vol. 2672, no. 8, pp. 505–510, Dec. 2018, doi: 10.1177/0361198118777078.
+[2] M. Wei, J. Corcoran, T. Sigler, and Y. Liu, "Modeling the Influence of Weather on Transit Ridership: A Case Study from Brisbane, Australia," Transportation Research Record, vol. 2672, no. 8, pp. 505–510, Dec. 2018, doi: 10.1177/0361198118777078.
 
-[3] J. Feng, X. Li, B. Mao, Q. Xu, and Y. Bai, “Weighted Complex Network Analysis of the Different Patterns of Metro Traffic Flows on Weekday and Weekend,” Discrete Dynamics in Nature and Society, vol. 2016, no. 1, p. 9865230, 2016, doi: 10.1155/2016/9865230.
+[3] J. Feng, X. Li, B. Mao, Q. Xu, and Y. Bai, "Weighted Complex Network Analysis of the Different Patterns of Metro Traffic Flows on Weekday and Weekend," Discrete Dynamics in Nature and Society, vol. 2016, no. 1, p. 9865230, 2016, doi: 10.1155/2016/9865230.
