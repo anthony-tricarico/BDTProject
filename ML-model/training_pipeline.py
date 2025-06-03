@@ -482,7 +482,7 @@ if __name__ == "__main__":
                     print("Closing producer...")
                     producer.close()
                 
-                print(f"Model sent to Kafka: {model_key} (accuracy: {acc:.4f})")
+                print(f"Model sent to Kafka: {model_key} (RMSE: {acc:.4f})")
                 
                 # Wait for 60 seconds before next cycle
                 print("Waiting 60 seconds before next training cycle...")

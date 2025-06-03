@@ -7,9 +7,29 @@ import numpy as np
 from typing import List, Optional, Any
 import time
 import pandas as pd
-import xgboost as xgb  # Add XGBoost import
+import xgboost as xgb  
+import os
+from contextlib import asynccontextmanager
 
-app = FastAPI(title="Bus Congestion Prediction Service")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for loading the model when the service starts"""
+    # Startup: Load the model
+    global model
+    while model is None:
+        try:
+            load_model()
+        except Exception as e:
+            print(f"Error loading model: {e}, retrying in 60 seconds...")
+            time.sleep(60)
+    yield
+    # Cleanup (if needed)
+    # No cleanup needed in this case
+
+app = FastAPI(
+    title="Bus Congestion Prediction Service",
+    lifespan=lifespan
+)
 
 # Initialize MinIO client
 minio_client = Minio(
@@ -20,9 +40,9 @@ minio_client = Minio(
 )
 
 # Global variable to store the loaded model
+MODEL_RELOAD_INTERVAL = int(os.getenv('MODEL_RELOAD_INTERVAL', default=300))
 model = None
 last_model_load_time = 0
-MODEL_RELOAD_INTERVAL = 300  # Reload model every 5 minutes
 
 class PredictionInput(BaseModel):
     trip_id: Any  # Changed from int to Any to accept any type of identifier and accept trip ids that are not numbers
@@ -57,20 +77,10 @@ def load_model():
         print(f"Error loading model: {e}")
         return False
 
-@app.on_event("startup")
-async def startup_event():
-    """Load the model when the service starts"""
-    while model is None:
-        try:
-            load_model()
-        except Exception as e:
-            print(f"Error loading model: {e}, retrying in 60 seconds...")
-            time.sleep(60)
-
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "model_loaded": model is not None}
+    return {"status": "healthy", "model_loaded": model is not None, "model_reload_interval": MODEL_RELOAD_INTERVAL}
 
 @app.post("/predict")
 async def predict(input_data: PredictionInput):

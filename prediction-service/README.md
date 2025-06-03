@@ -14,7 +14,7 @@ The prediction service:
 ## Features
 
 - **Real-time Predictions**: Make predictions using the latest champion model
-- **Automatic Model Updates**: Reloads the model every 5 minutes to ensure it's using the latest champion
+- **Automatic Model Updates**: Reloads the model every 5 minutes (by default) to ensure it's using the latest champion. The time interval used to reload the model can be changed by modifying the `MODEL_RELOAD_INTERVAL` environment variable under the `prediction_service` service in the `docker-compose.yml` file. This value should be the number of seconds before a new model is retrieved from the model storage (only integer values admitted).
 - **REST API**: Easy-to-use HTTP endpoints for predictions
 - **Health Monitoring**: Built-in health check endpoint
 - **Error Handling**: Comprehensive error handling for model loading and prediction failures

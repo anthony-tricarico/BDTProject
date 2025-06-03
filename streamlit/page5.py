@@ -102,7 +102,7 @@ selected_routes = st.multiselect("Select routes to display", available_routes, d
 filtered_df = df[df["route_short_name"].isin(selected_routes)]
 
 # Round timestamps and group
-filtered_df["timestamp_hour"] = filtered_df["timestamp_x"].dt.floor("H")
+filtered_df["timestamp_hour"] = filtered_df["timestamp_x"].dt.floor("h")
 time_df = (
     filtered_df.groupby(["route_short_name", "timestamp_hour"])["traffic_level"]
     .mean()

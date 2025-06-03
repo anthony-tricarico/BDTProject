@@ -2,7 +2,35 @@
 
 ![App Logo](data/assets/busflow_logo.png)
 
-Welcome to the repository for the Big Data Technologies Project! In this project our team tried to develop a scalable big data application with real-time functionalities. The objective was to provide transit authorities with the tools necessary to understand how to improve the allocation of buses based on the real-time and predicted demand for public transporation along multiple routes.
+Welcome to the repository for the Big Data Technologies Project! In this project our team tried to develop a scalable big data application with real-time functionalities. The objective was to provide transit authorities with the tools necessary to understand how to improve the allocation of buses based on the real-time and predicted demand for public transportation along multiple routes.
+
+# Tech Stack
+
+The project utilizes a diverse set of modern technologies to handle different aspects of the application. Below is a comprehensive overview of the tech stack:
+
+| Technology   | Role/Purpose                                                                                |
+| ------------ | ------------------------------------------------------------------------------------------- |
+| Python       | Primary programming language used across all components                                     |
+| FastAPI      | REST API development for various microservices (prediction service, sensors consumer, etc.) |
+| Streamlit    | Frontend dashboard development and data visualization                                       |
+| Apache Kafka | Message broker for real-time data streaming between components                              |
+| Apache Spark | Distributed data processing and streaming analytics                                         |
+| PostgreSQL   | Primary database for storing processed data and analytics                                   |
+| MongoDB      | NoSQL database for storing raw data                                                         |
+| MinIO        | Object storage for ML models                                                                |
+| XGBoost      | Machine learning model implementation for congestion prediction                             |
+| Docker       | Containerization and orchestration of all services                                          |
+| Altair       | Interactive data visualization in the dashboard                                             |
+| PyDeck       | Geospatial data visualization                                                               |
+| SQLAlchemy   | SQL toolkit and ORM for database operations                                                 |
+| MLflow       | ML model lifecycle management and metrics storage                                           |
+| Scikit-learn | Machine learning utilities and preprocessing                                                |
+| Uvicorn      | ASGI server for FastAPI applications                                                        |
+| Dask         | Parallel computing and large dataset handling                                               |
+| Boto3        | AWS SDK for Python, used with MinIO                                                         |
+| Redis        | In-memory data store for API rate limiting in traffic data collection                       |
+
+Each technology was chosen for its specific strengths and ability to handle different aspects of the real-time data processing pipeline, from data ingestion to visualization.
 
 # Running the app locally
 
@@ -137,7 +165,7 @@ kafka-producer-passengers:
     - SLEEP=0.05
 ```
 
-and changing the value associated to `SLEEP` (lower values = faster data generation + higher CPU load, and viceversa).
+and changing the value associated to `SLEEP` (lower values = faster data generation + higher CPU load, and vice versa).
 
 Below we report CPU and memory usage metrics relative to a `SLEEP` parameter of 0.05.
 
@@ -146,9 +174,15 @@ Below we report CPU and memory usage metrics relative to a `SLEEP` parameter of 
 
 Based on these metrics it is recommended that Docker has access to at least 8 CPU cores and 6GB of RAM to enjoy a seamless experience.
 
+## Issues related to ome Pages in the Dashboard
+
+Some pages in the dashboard might not work as intended in the first few minutes from the first startup. While we work on these issues, for the time being we ask for your patience as the dashboard has been tested to work after some minutes from the correct initialization of all components. In particular, we recommend to use the `Refresh` button emdedded in the pages. This has been found to fix most of the errors after 2-5 minutes from startup.
+
 # Additional Information about the Current Implementation
 
-This section contains additional information as to how we reached the current implementation and the data that is being used in the app. To learn more details about the way individual components work in the program and the tasks they carry out, please read the `README.md` file contained in each service's directory.
+This section contains additional information as to how we reached the current implementation and the data that is being used in the app.
+
+To learn more details about the way individual components work in the program and the tasks they carry out, please read the `README.md` file contained in each service's directory.
 
 ## Data
 
