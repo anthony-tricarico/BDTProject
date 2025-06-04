@@ -30,6 +30,9 @@ Welcome to the repository for the Big Data Technologies Project! In this project
   - [Error Reading .env Files](#1-error-reading-from-env-files)
   - [CPU Overload](#cpu-overload)
   - [Dashboard Issues](#issues-related-to-some-pages-in-the-dashboard)
+- [Limitations](#limitations)
+  - [Dask to manage SQL Aggregations](#dask-to-manage-sql-aggregations)
+  - [Model Retraining and Comparison to Current Champion](#model-retraining-and-comparison-to-current-champion)
 - [Additional Information](#additional-information-about-the-current-implementation)
   - [Development History](#development-history)
   - [Data](#data)
@@ -38,7 +41,7 @@ Welcome to the repository for the Big Data Technologies Project! In this project
 
 # Team Composition
 
-This project was developed by team 1 represented by:
+This project was developed by Group number 1 represented by:
 
 1. Virginia Di Mauro - [@virginiadimauro](https://github.com/virginiadimauro)
 2. Luisa Porzio - [@LuPorzio](https://github.com/LuPorzio)
@@ -306,6 +309,24 @@ Based on these metrics it is recommended that Docker has access to at least 8 CP
 
 Some pages in the dashboard might not work as intended in the first few minutes following the initial startup. While we work on these issues (which will be addressed in future versions of the program), for the time being we ask for your patience as the dashboard has been tested to work after some minutes from the correct initialization of all components. In particular, we recommend to use the `Refresh` button emdedded in the pages. This has been found to fix most of the errors after 2-5 minutes from startup.
 
+# Limitations
+
+This section outlines the main limitations of the current implementation and gives a brief overview of what would have been done differently with more time or resources available.
+
+## Dask to manage SQL Aggregations
+
+The original idea was to use Apache Spark (`PySpark`) to run the main data aggregation jobs to get clean data to be written in PostgreSQL and then fed to the ML model. However, we had to deal with the technical difficulties that come from using a python wrapper around Java code in the JVM. After a week of trials and errors we reached the conclusion that we would have found an alternative workaround to this problem. Therefore, we started working with `Dask` since it offered a cleaner and more familiar `pandas`-like API that better suited our needs for fast development, prototyping, and testing. While this is not a limitation per se, the fact that some steps in the data aggregation are handled using `pandas` can lead to potential issues if the app were to scale truly fast.
+
+Therefore, future versions of the app will try to add native support for `PySpark` to run the aggregations and save clean data to PostgreSQL so that this can be then passed on to the ML model for training. Alternatively, future implementations could try to replace the steps carried out in `pandas` with full `dask` thus effectively making the application more scalable. This second approach would probably result in better perfomance as well as documented in the following [benchmarks](https://docs.coiled.io/blog/spark-vs-dask.html).
+
+In the current implementation PySpark is still used to read the stream of data from Kafka, enforce a schema on it before it can be written in PostgreSQL, and only then adds new data to the tables.
+
+## Model Retraining and Comparison to Current Champion
+
+In the current implementation a new model is trained on new data every minute (with default settings). While we know MLops should not be the main focus of the project we still tried to add AirFlow and MLflow to track model performances and record artifacts across different training cycles. However, we soon noticed that some services or containers would crash due to the high amount of resources needed to run both services. Therefore, we needed to backtrack and keep only MLflow to at least store the main metrics about each training cycle. This mitigates the issue and adds interesting possibilities for future development including the possibility of detecting model metrics' drift and retrigger training only when model performances are deemed unsatisfactory.
+
+Also, the current implementation explores a challenger-champion paradigm to decide which model should be used for serving predictions via the API. However, the challenger is not evaluated on the same test set as the previous champion making the evaluation based on the RMSE _potentially unfair_. In future versions, we will make sure to address this pitfall of the current implementation and include a diverse and representative holdout test set used to compute the RMSE of all models to improve the model selection process and make it _more fair_.
+
 # Additional Information about the Current Implementation
 
 This section contains additional information as to how we reached the current implementation and the data that is being used in the app.
@@ -314,7 +335,7 @@ To learn more details about the way individual components work in the program an
 
 ## Development history
 
-Dynamic visualization of the project development realized with [gource](https://github.com/acaudwell/Gource).
+Dynamic visualization of the project development timeline realized with [gource](https://github.com/acaudwell/Gource).
 
 <p align="center">
   <img src="data/assets/DevelopmentHistory.gif" width="500"/>
