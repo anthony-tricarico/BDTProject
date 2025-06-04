@@ -30,6 +30,7 @@ Welcome to the repository for the Big Data Technologies Project! In this project
   - [CPU Overload](#cpu-overload)
   - [Dashboard Issues](#issues-related-to-some-pages-in-the-dashboard)
 - [Additional Information](#additional-information-about-the-current-implementation)
+  - [Development History](#development-history)
   - [Data](#data)
   - [Data Generation with LLMs](#data-generation-with-llms)
   - [Literature](#literature-on-the-topic)
@@ -301,6 +302,14 @@ Some pages in the dashboard might not work as intended in the first few minutes 
 This section contains additional information as to how we reached the current implementation and the data that is being used in the app.
 
 To learn more details about the way individual components work in the program and the tasks they carry out, please read the `README.md` file contained in each service's directory.
+
+## Development history
+
+Dynamic visualization of the project development realized with [gource](https://github.com/acaudwell/Gource).
+
+<p align="center">
+  <img src="data/assets/DevelopmentHistory.gif" width="500"/>
+</p>
 
 ## Data
 
