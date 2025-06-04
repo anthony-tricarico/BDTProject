@@ -6,7 +6,7 @@ import time
 # === Configuration ===
 KAFKA_BOOTSTRAP_SERVERS = "kafka:9092"
 KAFKA_TOPICS = ["sensors.topic", "ticketing.topic"]  # Topics for sensor and ticket data
-CHECKPOINT_LOCATION = "/tmp/checkpoint"  # Location to store offset information
+CHECKPOINT_LOCATION = "/tmp/checkpoint"  # Location to store offset information, internal to the container
 
 # PostgreSQL configuration
 POSTGRES_URL = "jdbc:postgresql://db:5432/raw_data"
@@ -27,7 +27,6 @@ TICKET_SCHEMA = StructType([
     StructField("bus_id", IntegerType(), True),
     StructField("trip_id", StringType(), True),
     StructField("peak_hour", IntegerType(), True),
-    # StructField("event", StringType(), True),
     StructField("hospital", IntegerType(), True), 
     StructField("school", IntegerType(), True)
 ])
@@ -42,7 +41,6 @@ SENSOR_SCHEMA = StructType([
     StructField("bus_id", IntegerType(), True),
     StructField("trip_id", StringType(), True),
     StructField("peak_hour", IntegerType(), True),
-    # StructField("event", StringType(), True),
     StructField("hospital", IntegerType(), True), 
     StructField("school", IntegerType(), True)
 ])
@@ -86,24 +84,15 @@ def read_kafka_stream(spark, topic, schema):
             "kafka.session.timeout.ms": "60000"
         }
         
-        # print(f"\nDEBUG: Connecting to Kafka topic {topic} with options:")
-        # print(kafka_options)
-        
         raw_stream = spark.readStream \
             .format("kafka") \
             .options(**kafka_options) \
             .load()
         
-        # print(f"\nDEBUG: Raw Kafka stream schema for {topic}:")
-        # raw_stream.printSchema()
-        
         parsed_stream = raw_stream \
             .selectExpr("CAST(value AS STRING)") \
             .select(from_json("value", schema).alias("data")) \
             .select("data.*")
-        
-        # print(f"\nDEBUG: Parsed stream schema for {topic}:")
-        # parsed_stream.printSchema()
         
         timestamped_stream = parsed_stream \
             .withColumn("timestamp", to_timestamp("timestamp"))
@@ -122,7 +111,6 @@ def write_to_postgres(batch_df, batch_id, table_name):
         return
 
     try:
-        # print(f"\nDEBUG: Processing batch {batch_id}")
         row_count = batch_df.count()
         print(f"Number of records: {row_count}")
         
@@ -197,11 +185,6 @@ def main():
             print("Successfully created new Spark session")
         else:
             print("Using existing Spark session")
-        
-        # Test PostgreSQL connection before starting
-        # if not test_postgres_connection(spark):
-        #     print("ERROR: Cannot proceed without PostgreSQL connection")
-        #     return
         
         try:
             # Start the streaming process
