@@ -6,6 +6,7 @@ Welcome to the repository for the Big Data Technologies Project! In this project
 
 ## Table of Contents
 
+- [Team Composition](#team-composition)
 - [Tech Stack](#tech-stack)
 - [Data Pipeline and Infrastructure](#data-pipeline-and-infrastructure)
 - [Project Structure](#project-structure)
@@ -34,6 +35,14 @@ Welcome to the repository for the Big Data Technologies Project! In this project
   - [Data](#data)
   - [Data Generation with LLMs](#data-generation-with-llms)
   - [Literature](#literature-on-the-topic)
+
+# Team Composition
+
+This project was developed by team 1 represented by:
+
+1. Virginia Di Mauro - [@virginiadimauro](https://github.com/virginiadimauro)
+2. Luisa Porzio - [@LuPorzio](https://github.com/LuPorzio)
+3. Anthony Tricarico - [@tricarico672](https://github.com/tricarico672)
 
 # Tech Stack
 
