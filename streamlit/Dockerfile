@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.9
 
 WORKDIR /app
 
@@ -14,6 +14,7 @@ WORKDIR /app
 
 COPY . .
 
+# RUN apt-get update && apt-get install -y gcc g++ build-essential
 RUN pip install -r requirements.txt
 
 ENTRYPOINT ["streamlit", "run", "manager.py", "--server.port=8501", "--server.address=0.0.0.0"]

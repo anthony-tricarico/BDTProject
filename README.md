@@ -342,7 +342,7 @@ This section contains additional information as to how we reached the current im
 
 To learn more details about the way individual components work in the program and the tasks they carry out, please read the `README.md` file contained in each service's directory.
 
-## Development history
+## Development history (up to June 4th, 2025)
 
 Dynamic visualization of the project development timeline realized with [gource](https://github.com/acaudwell/Gource).
 

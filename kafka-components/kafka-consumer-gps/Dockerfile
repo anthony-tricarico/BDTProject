@@ -5,6 +5,7 @@ WORKDIR /app
 COPY kafka-consumer-gps/gps_consumer.py .
 COPY kafka-consumer-gps/requirements.txt .
 
+# RUN apt-get update && apt-get install -y gcc g++ build-essential
 RUN pip install -r requirements.txt
 
 CMD ["python", "gps_consumer.py"] 

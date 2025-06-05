@@ -71,7 +71,7 @@ else:
     hourly_avg = filtered_df.groupby("hour")["congestion_rate"].mean().reset_index()
 
     chart = alt.Chart(hourly_avg).mark_bar(color="steelblue").encode(
-        x=alt.X("hour:O", title="Hour of Day"),
+        x=alt.X("hour:O", title="Hour of Day", axis=alt.Axis(labelAngle=0)),
         y=alt.Y("congestion_rate:Q", title="Average Congestion Rate")
     ).properties(
         width=700,
