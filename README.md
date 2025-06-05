@@ -33,6 +33,7 @@ Welcome to the repository for the Big Data Technologies Project! In this project
 - [Limitations](#limitations)
   - [Dask to manage SQL Aggregations](#dask-to-manage-sql-aggregations)
   - [Model Retraining and Comparison to Current Champion](#model-retraining-and-comparison-to-current-champion)
+  - [Lack of Dimensional Modeling and Optimization for faster Queries in Data Warehouse](#lack-of-dimensional-modeling-and-optimization-for-faster-queries-in-data-warehouse)
 - [Additional Information](#additional-information-about-the-current-implementation)
   - [Development History](#development-history)
   - [Data](#data)
@@ -319,13 +320,21 @@ The original idea was to use Apache Spark (`PySpark`) to run the main data aggre
 
 Therefore, future versions of the app will try to add native support for `PySpark` to run the aggregations and save clean data to PostgreSQL so that this can be then passed on to the ML model for training. Alternatively, future implementations could try to replace the steps carried out in `pandas` with full `dask` thus effectively making the application more scalable. This second approach would probably result in better perfomance as well as documented in the following [benchmarks](https://docs.coiled.io/blog/spark-vs-dask.html).
 
-In the current implementation PySpark is still used to read the stream of data from Kafka, enforce a schema on it before it can be written in PostgreSQL, and only then adds new data to the tables.
+In the current implementation `PySpark` is still used to read the stream of data from Kafka, enforce a schema on it before it can be written in PostgreSQL, and only then adds new data to the tables.
 
 ## Model Retraining and Comparison to Current Champion
 
 In the current implementation a new model is trained on new data every minute (with default settings). While we know _MLops_ should not be the main focus of the project we still tried to add `AirFlow` and `MLflow` to track model performances and record artifacts across different training cycles. However, we soon noticed that some services or containers would crash due to the high amount of resources needed to run both services. Therefore, we needed to backtrack and keep only `MLflow` to at least store the main metrics about each training cycle. This mitigates the issue and adds interesting possibilities for future development including the possibility of detecting model metrics' drift and retrigger training only when model performances are deemed unsatisfactory (e.g., RMSE is above a certain threshold).
 
 Also, the current implementation explores a challenger-champion paradigm to decide which model should be used for serving predictions via the API. However, the challenger is not evaluated on the same test set as the previous champion making the evaluation based on the RMSE _potentially unfair_. In future versions, we will make sure to address this pitfall of the current implementation and include a diverse and representative holdout test set used to compute the RMSE of all models to improve the model selection process and make it _more fair_.
+
+## Lack of Dimensional Modeling and Optimization for faster Queries in Data Warehouse
+
+In the current implementation, the data warehouse architecture lacks the dimensional modeling aspect. While we wanted to make sure that the data warehouse would be the "single source of truth" to be used in the production of any analytics that would follow, the lack of a proper `PySpark` aggregation job did not allow us to achieve that goal. This implies that our "data warehouse" works more like a traditional Transactional Database (OLTP) optimized for fast writes rather than a OLAP database optimized for complex queries.
+
+As explained before this issue is a direct consequence of the lack of proper support for `PySpark`. On the one hand, as a potential solution, we thought about writing the data to a proper data warehouse when the `dask` aggregations are run to train the ML model or to keep the structure of such aggregations and run them as a separate `cron` job. On the other hand, we decided not to add this step as we deemed it to bring more inefficiencies to the architecture.
+
+Future versions of the app will work on implementing working `PySpark` aggregations and a proper `OLAP` Data Warehouse for managing big scale analytics in a more efficient way.
 
 # Additional Information about the Current Implementation
 
