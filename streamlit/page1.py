@@ -49,10 +49,10 @@ except Exception as e:
 
 st.subheader("📋 Select Route")
 df["timestamp_x"] = pd.to_datetime(df["timestamp_x"])
-df = df.sort_values("route_short_name")
 
-sorted_routes = sorted(df["route_short_name"].unique(), key=lambda x: int(x) if x.isdigit() else x)
-selected_route = st.selectbox("Select a route", sorted_routes)
+# Get unique routes without sorting
+available_routes = df["route_short_name"].unique().tolist()
+selected_route = st.selectbox("Select a route", available_routes)
 
 st.subheader("📅 Select Date")
 available_dates = df[df["route_short_name"] == selected_route]["timestamp_x"].dt.date.unique()

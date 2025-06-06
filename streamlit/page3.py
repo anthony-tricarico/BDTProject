@@ -132,7 +132,7 @@ def get_predictions_for_timeframe(
         
         # Prepare prediction request
         prediction_data = {
-            "trip_id": int(str(route_short_name)[0]),
+            "trip_id": str(route_short_name)[0],
             "timestamp": timestamp.strftime("%Y-%m-%d %H:%M:%S"),
             "peak_hour": is_peak_hour,
             "sine_time": sine_time,

@@ -38,7 +38,10 @@ The service connects to:
 - PostgreSQL database (`db:5432`)
 - Uses environment variables:
   - `SLEEP`: Controls message production rate
-  - `GOOGLE_API_KEY`: Optional, enables additional traffic condition data
+  - `BUSES`: One of `selected` or `None`; default: `selected`. This variable manages which bus routes will be used. When this is set to `selected` only some routes will be shown, whereas when this is set to `None` all bus routes from Trento urban transportation system will be used.
+  - `GOOGLE_API_KEY`: Optional, enables additional traffic condition data retrieval from Google Maps Distance Matrix API. Make sure to set this running the appropriate command as explained in the project's `README` file.
+
+**IMPORTANT**: selecting a relatively high sleep rate along with setting `BUSES` to `None` will slow down the data generation process as the day indicated in the fictitious timestamp will only change when all trips within a day for all routes selected will be generated. Use this option with caution as a smaller `SLEEP` value will consume more computing resources.
 
 ### Produced Message Format
 

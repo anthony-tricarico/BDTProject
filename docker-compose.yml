@@ -68,6 +68,7 @@ services:
       - db
     environment:
       - SLEEP=0.05
+      - BUSES=selected
 
   kafka-consumer-passengers:
     build:

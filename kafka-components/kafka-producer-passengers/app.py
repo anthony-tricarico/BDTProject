@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 # parse .env file and add all variables contained in it as environment variables 
 load_dotenv()
 SLEEP = os.getenv("SLEEP")
+BUSES = os.getenv("BUSES", "selected")
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", None)
 
 def get_passengers():
@@ -35,7 +36,9 @@ def get_passengers():
 
     df = pd.read_csv('passengers_with_shapes.csv')
     unique_trip_ids = list(df['trip_id'].unique())
+    unique_routes = list(df['route_short_name'].unique())
 
+    selected_buses = ["5", "8", "5/", "2"] if BUSES == "selected" else unique_routes
     bus_deactive_list = [i for i in range(1, max_buses+1)]
     
     # ensure we do not pop always the same element
@@ -57,7 +60,7 @@ def get_passengers():
 
             # for testing does not include null shape ids
 
-            for _, row in df[(df['trip_id'] == trip_id) & ~(df['shape_id'].isna()) & ~(df['route_short_name'].isin(["5", "8", "5/", "2"]))].iterrows():
+            for _, row in df[(df['trip_id'] == trip_id) & ~(df['shape_id'].isna()) & (df['route_short_name'].isin(selected_buses))].iterrows():
                 # extract relevant information for each row which corresponds to a stop
                 shape_id = row.loc['shape_id']
                 trip_idx = trip_id

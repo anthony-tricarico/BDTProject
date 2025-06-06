@@ -166,12 +166,22 @@ def perform_aggregations(
         # Merge with weather (asof merge, so convert to pandas for this step)
         merged_pd = merged.compute()
         weather_pd = weather.compute()
-        weather_pd['hour'] = pd.to_datetime(weather_pd['hour'])
+
+        # Ensure both timestamp columns are datetime type
         merged_pd['timestamp_x'] = pd.to_datetime(merged_pd['timestamp_x'])
+        weather_pd['hour'] = pd.to_datetime(weather_pd['hour'])
+
+        # Sort both dataframes by their timestamp columns
+        merged_pd = merged_pd.sort_values('timestamp_x')
+        weather_pd = weather_pd.sort_values('hour')
+
+        # Perform the merge_asof
         merged_pd = pd.merge_asof(
-            merged_pd.sort_values('timestamp_x'),
-            weather_pd[['hour', 'temperature', 'precipitation_probability', 'weather_code', 'latitude', 'longitude']].sort_values('hour'),
-            left_on='timestamp_x', right_on='hour', direction='backward'
+            merged_pd,
+            weather_pd[['hour', 'temperature', 'precipitation_probability', 'weather_code', 'latitude', 'longitude']],
+            left_on='timestamp_x',
+            right_on='hour',
+            direction='backward'
         )
 
         # Merge with events (by date)
