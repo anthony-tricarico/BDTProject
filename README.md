@@ -39,6 +39,7 @@ Welcome to the repository for the Big Data Technologies Project! In this project
   - [Data](#data)
   - [Data Generation with LLMs](#data-generation-with-llms)
   - [Literature](#literature-on-the-topic)
+  - [Additional Resources](#additional-resources)
 
 # Team Composition
 
@@ -356,7 +357,7 @@ The data that served as the starting point for the project was downloaded from t
 
 ## Data Generation with LLMs
 
-Using the structure provided by the data from Trentino Trasporti, and after having aggregated the data in a single .csv file, we then prompted ChatGPT to generate more examples of such data by using the following prompt:
+Using the structure provided by the data from Trentino Trasporti, and after having aggregated the data in a single .csv file (details on how this was done are in `notebooks/merging_data.ipynb`), we then prompted ChatGPT to generate more examples of such data by using the following prompt:
 
 ### Prompt
 
@@ -391,3 +392,15 @@ Some choices made in the prompt to generate the data were informed by the availa
 [2] M. Wei, J. Corcoran, T. Sigler, and Y. Liu, "Modeling the Influence of Weather on Transit Ridership: A Case Study from Brisbane, Australia," Transportation Research Record, vol. 2672, no. 8, pp. 505–510, Dec. 2018, doi: 10.1177/0361198118777078.
 
 [3] J. Feng, X. Li, B. Mao, Q. Xu, and Y. Bai, "Weighted Complex Network Analysis of the Different Patterns of Metro Traffic Flows on Weekday and Weekend," Discrete Dynamics in Nature and Society, vol. 2016, no. 1, p. 9865230, 2016, doi: 10.1155/2016/9865230.
+
+## Additional Resources
+
+- [Events in Trentino](https://www.visittrentino.info/en/guide/what-to-do/events)
+
+- [MongoDB vs Redis](https://www.ionos.com/digitalguide/server/know-how/mongodb-vs-redis/)
+
+- [Explanation for GMaps API behavior](https://issuetracker.google.com/issues/69602418?pli=1#comment2)
+
+- [Data Visualization Ideas for Traffic Data](https://medium.com/@hishamsajid113/using-google-distance-matrix-api-to-reduce-commute-time-b17a0b9b0fbe)
+
+- [Dask vs Spark Benchmarks](https://docs.coiled.io/blog/spark-vs-dask.html)
