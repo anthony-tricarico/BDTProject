@@ -284,33 +284,55 @@ services:
   dask-scheduler:
     build:
       context: ./ml-model
-      dockerfile: ./Dockerfile
-    command: dask-scheduler
+      dockerfile: Dockerfile.dask
+    command: ["dask-scheduler"]
     ports:
-      - "8786:8786" # Dask dashboard
-      - "8787:8787" # Dask scheduler
-    environment:
-      - DASK_DISTRIBUTED__SCHEDULER__WORK_STEALING=True
-      - DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES=50
-    depends_on:
-      - db
-      - minio
+      - "8786:8786"
+      - "8787:8787"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8787/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   dask-worker:
     build:
       context: ./ml-model
-      dockerfile: ./Dockerfile
-    command: dask-worker dask-scheduler:8786
+      dockerfile: Dockerfile.dask
+    command:
+      [
+        "dask-worker",
+        "dask-scheduler:8786",
+        "--nthreads",
+        "2",
+        "--memory-limit",
+        "4GB",
+      ]
     depends_on:
       - dask-scheduler
-      - db
-      - minio
     environment:
-      - DASK_DISTRIBUTED__WORKER__MEMORY__TARGET=0.8
-      - DASK_DISTRIBUTED__WORKER__MEMORY__SPILL=0.9
-      - DASK_DISTRIBUTED__WORKER__MEMORY__PAUSE=0.95
+      - PYTHONPATH=/home/dask
+      - DASK_DISTRIBUTED__WORKER__MULTIPROCESSING_METHOD=fork
     deploy:
-      replicas: 2 # Number of worker replicas
+      replicas: 2
+
+  training-service:
+    build:
+      context: ./ml-model
+      dockerfile: Dockerfile.training
+    depends_on:
+      - db
+      - kafka
+      - mlflow-db
+      - mlflow
+      - dask-scheduler
+    ports:
+      - "8007:8007"
+    environment:
+      - POSTGRES_URL=postgresql://postgres:example@db:5432/raw_data
+      - MLFLOW_TRACKING_URI=http://mlflow:5001
+      - MLFLOW_DB_URL=postgresql://postgres:example@mlflow-db:5432/mlflow
+    restart: unless-stopped
 
   mlflow:
     build:

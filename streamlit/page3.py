@@ -11,6 +11,35 @@ import altair as alt
 st.set_page_config(layout="wide")
 st.title("📈 Congestion Forecast")
 
+# Add a section for model training in the sidebar
+st.sidebar.title("Model Training")
+if st.sidebar.button("Train New Model"):
+    with st.sidebar.status("Training new model...", expanded=True) as status:
+        try:
+            # Call the training service
+            response = requests.post("http://training-service:8007/train")
+            if response.status_code == 200:
+                result = response.json()
+                if result.get("success"):
+                    accuracy = result['accuracy']
+                    is_champion = result.get('is_champion', False)
+                    
+                    if is_champion:
+                        st.sidebar.success(f"🏆 New CHAMPION model trained! RMSE: {accuracy:.4f}")
+                    else:
+                        st.sidebar.info(f"New challenger model trained (not champion). RMSE: {accuracy:.4f}")
+                    
+                    status.update(label="Training completed!", state="complete")
+                else:
+                    st.sidebar.error(f"Training failed: {result.get('error', 'Unknown error')}")
+                    status.update(label="Training failed!", state="error")
+            else:
+                st.sidebar.error("Failed to trigger training")
+                status.update(label="Training failed!", state="error")
+        except Exception as e:
+            st.sidebar.error(f"Error during training: {str(e)}")
+            status.update(label="Training failed!", state="error")
+
 # Define Italy timezone
 ITALY_TZ = pytz.timezone('Europe/Rome')
 

@@ -1,0 +1,30 @@
+FROM python:3.9-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+
+# Install all requirements to match the training environment
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Create a non-root user and set up the working directory
+RUN useradd -m -u 1000 dask && \
+    mkdir -p /home/dask && \
+    chown -R dask:dask /home/dask
+
+# Set working directory
+WORKDIR /home/dask
+
+# Switch to non-root user
+USER dask
+
+# Add local directory to Python path
+ENV PYTHONPATH=/home/dask
+
+# Default command (will be overridden by docker-compose)
+CMD ["dask-scheduler"] 

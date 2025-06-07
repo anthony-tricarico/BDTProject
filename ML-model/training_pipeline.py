@@ -15,7 +15,7 @@ import boto3
 import io
 from minio import Minio
 import numpy as np
-from dask.distributed import Client
+from dask.distributed import Client, LocalCluster
 import xgboost as xgb
 import mlflow
 import mlflow.xgboost
@@ -23,6 +23,8 @@ from mlflow.models import infer_signature
 import os
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+import multiprocessing
+from functools import partial
 
 # Database configuration
 POSTGRES_URL = "postgresql://postgres:example@db:5432/raw_data"
@@ -39,6 +41,44 @@ MLFLOW_DB_URL = "postgresql://postgres:example@mlflow-db:5432/mlflow"
 # Configure MLflow to disable Git tracking and silence warnings
 os.environ['MLFLOW_DISABLE_GIT'] = 'true'
 os.environ['GIT_PYTHON_REFRESH'] = 'quiet'
+
+# Number of seats on each bus
+total_seats = 400
+
+def initialize_dask_client():
+    """Initialize Dask client with proper error handling"""
+    try:
+        # Try to connect to existing scheduler
+        client = Client("dask-scheduler:8786", timeout=30)
+        print("Connected to existing Dask scheduler")
+        return client
+    except Exception as e:
+        print(f"Could not connect to Dask scheduler: {e}")
+        print("Creating local Dask cluster...")
+        # Create a local cluster with explicit multiprocessing configuration
+        cluster = LocalCluster(
+            n_workers=2,
+            threads_per_worker=2,
+            processes=True,
+            memory_limit='4GB'
+        )
+        client = Client(cluster)
+        print("Local Dask cluster initialized")
+        return client
+
+def main():
+    # Set multiprocessing start method
+    if os.name != 'nt':  # Not Windows
+        multiprocessing.set_start_method('fork', force=True)
+    else:
+        multiprocessing.set_start_method('spawn', force=True)
+
+    # Initialize Dask client
+    client = initialize_dask_client()
+    
+    # Run the training pipeline
+    result = run_training_pipeline()
+    return result
 
 def ensure_mlflow_database_exists():
     pass
@@ -82,12 +122,6 @@ def setup_mlflow():
 # Initialize MLflow tracking
 mlflow.set_tracking_uri(MLFLOW_DB_URL)
 print(f"[MLflow] Tracking URI: {mlflow.get_tracking_uri()}")
-
-# Initialize Dask client
-client = Client("dask-scheduler:8786")
-
-# Number of seats on each bus
-total_seats = 400
 
 # Call the setup function to initialize MLflow
 EXPERIMENT_NAME = setup_mlflow()
@@ -385,110 +419,173 @@ def get_accuracy_model(final_clean, model, model_type='decision_tree'):
     print(f"RMSE is: {rmse}")
     return rmse
 
-if __name__ == "__main__":
-    while True:  # Run indefinitely
-        try:
-            # Wait for services to be ready
-            max_retries = 10
-            retry_count = 0
-            while retry_count < max_retries:
-                try:
-                    # Test database connection
-                    engine = create_db_connection()
-                    with engine as conn:
-                        conn.execute(text("SELECT 1"))
-                    
-                    # Test MinIO connection
-                    minio_client = Minio(
-                        "minio:9000",
-                        access_key="minioadmin",
-                        secret_key="minioadmin",
-                        secure=False
-                    )
-                    minio_client.list_buckets()
-                    
-                    # Test Kafka connection
-                    producer = create_kafka_producer()
-                    
-                    # Initialize MLflow
-                    setup_mlflow()
-                    print("All services are ready!")
-                    break
-                except Exception as e:
-                    retry_count += 1
-                    print(f"Service not ready (attempt {retry_count}/{max_retries}): {e}")
-                    if retry_count == max_retries:
-                        raise Exception("Failed to connect to required services")
-                    time.sleep(5)
+def get_current_champion_accuracy():
+    """Get the accuracy of the current champion model"""
+    try:
+        # Connect to MLflow
+        client = mlflow.tracking.MlflowClient()
+        
+        # Get the current champion model
+        champion_model = client.get_registered_model("bus_congestion_model")
+        if not champion_model:
+            return None
+            
+        # Get the latest version
+        latest_versions = client.get_latest_versions("bus_congestion_model", stages=["Production"])
+        if not latest_versions:
+            return None
+            
+        # Get the run ID from the latest version
+        run_id = latest_versions[0].run_id
+        run = client.get_run(run_id)
+        
+        # Get the accuracy metric
+        return run.data.metrics.get("test_rmse")
+    except Exception as e:
+        print(f"[Training] Error getting champion accuracy: {e}")
+        return None
 
-            # Run the training pipeline inside an MLflow run
-            with mlflow.start_run(run_name="training_cycle"):
-                print(f"[MLflow] Started run: {mlflow.active_run().info.run_id}")
-                print("\nStarting new training cycle...")
+def run_training_pipeline():
+    """Run the training pipeline once and return the training status"""
+    try:
+        print("[Training] Starting training pipeline...")
+        # Wait for services to be ready
+        max_retries = 10
+        retry_count = 0
+        while retry_count < max_retries:
+            try:
+                print("[Training] Checking service connections...")
+                # Test database connection
+                engine = create_db_connection()
+                with engine as conn:
+                    conn.execute(text("SELECT 1"))
                 
-                final_clean = perform_aggregations(selected_features=[
-                    'trip_id_x', 'timestamp_x', 'peak_hour', 'sine_time',
-                    'temperature', 'precipitation_probability', 'weather_code',
-                    'traffic_level', 'event_dummy', 'congestion_rate', 'school', 'hospital', 'weekend'
-                ])
-                final_clean = final_clean.drop_duplicates(subset=['trip_id_x', 'timestamp_x'])
-                write_to_sql(final_clean)
-                
-                # Train XGBoost model with MLflow tracking
-                xgb_model = train_xgboost_model(final_clean)
-                acc = get_accuracy_model(final_clean, xgb_model, model_type='xgboost')
-                
-                # Save model to MinIO
+                # Test MinIO connection
+                print("[Training] Testing MinIO connection...")
                 minio_client = Minio(
                     "minio:9000",
                     access_key="minioadmin",
                     secret_key="minioadmin",
                     secure=False
                 )
+                minio_client.list_buckets()
                 
-                bucket_name = "models"
-                if not minio_client.bucket_exists(bucket_name):
-                    minio_client.make_bucket(bucket_name)
-                    print(f"Created bucket: {bucket_name}")
-                else:
-                    print(f"Bucket '{bucket_name}' already exists.")
+                # Test Kafka connection
+                print("[Training] Testing Kafka connection...")
+                producer = create_kafka_producer()
                 
-                timestamp = int(time.time())
-                model_key = f"challengers/challenger_{timestamp}.pkl"
-                model_buffer = io.BytesIO()
-                joblib.dump(xgb_model, model_buffer)
-                model_buffer.seek(0)
-                minio_client.put_object(
-                    "models", model_key, model_buffer, length=-1, part_size=10*1024*1024
+                # Initialize MLflow
+                print("[Training] Setting up MLflow...")
+                setup_mlflow()
+                print("[Training] All services are ready!")
+                break
+            except Exception as e:
+                retry_count += 1
+                print(f"[Training] Service not ready (attempt {retry_count}/{max_retries}): {e}")
+                if retry_count == max_retries:
+                    raise Exception("Failed to connect to required services")
+                time.sleep(5)
+
+        # Run the training pipeline inside an MLflow run
+        print("[Training] Starting MLflow run...")
+        with mlflow.start_run(run_name="training_cycle"):
+            print(f"[Training] Started MLflow run: {mlflow.active_run().info.run_id}")
+            
+            print("[Training] Performing data aggregations...")
+            final_clean = perform_aggregations(selected_features=[
+                'trip_id_x', 'timestamp_x', 'peak_hour', 'sine_time',
+                'temperature', 'precipitation_probability', 'weather_code',
+                'traffic_level', 'event_dummy', 'congestion_rate', 'school', 'hospital', 'weekend'
+            ])
+            final_clean = final_clean.drop_duplicates(subset=['trip_id_x', 'timestamp_x'])
+            
+            print("[Training] Writing to SQL...")
+            write_to_sql(final_clean)
+            
+            print("[Training] Training XGBoost model...")
+            xgb_model = train_xgboost_model(final_clean)
+            acc = get_accuracy_model(final_clean, xgb_model, model_type='xgboost')
+            
+            print("[Training] Saving model to MinIO...")
+            minio_client = Minio(
+                "minio:9000",
+                access_key="minioadmin",
+                secret_key="minioadmin",
+                secure=False
+            )
+            
+            bucket_name = "models"
+            if not minio_client.bucket_exists(bucket_name):
+                minio_client.make_bucket(bucket_name)
+                print(f"[Training] Created bucket: {bucket_name}")
+            else:
+                print(f"[Training] Using existing bucket: {bucket_name}")
+            
+            timestamp = int(time.time())
+            model_key = f"challengers/challenger_{timestamp}.pkl"
+            model_buffer = io.BytesIO()
+            joblib.dump(xgb_model, model_buffer)
+            model_buffer.seek(0)
+            
+            print("[Training] Uploading model to MinIO...")
+            minio_client.put_object(
+                bucket_name,
+                model_key,
+                data=model_buffer,
+                length=model_buffer.getbuffer().nbytes,
+                part_size=10*1024*1024
+            )
+            
+            print("[Training] Sending metadata to Kafka...")
+            try:
+                message = {
+                    "model_key": model_key,
+                    "accuracy": float(acc),
+                    "timestamp": timestamp
+                }
+                print(f"[Training] Sending message to Kafka: {message}")
+                future = producer.send("model.train.topic", value=message)
+                record_metadata = future.get(timeout=10)
+                print(f"[Training] Message sent successfully to partition {record_metadata.partition} at offset {record_metadata.offset}")
+                producer.flush()
+                print("[Training] Producer flushed successfully")
+            except Exception as e:
+                print(f"[Training] Error sending to Kafka: {e}")
+                raise
+            finally:
+                print("[Training] Closing Kafka producer...")
+                producer.close()
+            
+            # Get current champion's accuracy
+            current_champion_rmse = get_current_champion_accuracy()
+            is_champion = False
+            
+            if current_champion_rmse is None or acc < current_champion_rmse:
+                is_champion = True
+                # If this is a better model, promote it to production
+                client = mlflow.tracking.MlflowClient()
+                model_details = mlflow.register_model(f"runs:/{mlflow.active_run().info.run_id}/model", "bus_congestion_model")
+                client.transition_model_version_stage(
+                    name="bus_congestion_model",
+                    version=model_details.version,
+                    stage="Production"
                 )
-                
-                # Send metadata to Kafka
-                try:
-                    message = {
-                        "model_key": model_key,
-                        "accuracy": float(acc),
-                        "timestamp": timestamp
-                    }
-                    print(f"Attempting to send message to Kafka: {message}")
-                    future = producer.send("model.train.topic", value=message)
-                    record_metadata = future.get(timeout=10)
-                    print(f"Message sent successfully to partition {record_metadata.partition} at offset {record_metadata.offset}")
-                    producer.flush()
-                    print(f"Producer flushed successfully")
-                except Exception as e:
-                    print(f"Error sending to Kafka: {e}")
-                    raise
-                finally:
-                    print("Closing producer...")
-                    producer.close()
-                
-                print(f"Model sent to Kafka: {model_key} (RMSE: {acc:.4f})")
-                
-                # Wait for 60 seconds before next cycle
-                print("Waiting 60 seconds before next training cycle...")
-                time.sleep(60)
-                
-        except Exception as e:
-            print(f"Error in training cycle: {e}")
-            print("Retrying in 60 seconds...")
-            time.sleep(60)
+                print(f"[Training] New champion model! Old RMSE: {current_champion_rmse}, New RMSE: {acc}")
+            else:
+                print(f"[Training] Not a champion model. Champion RMSE: {current_champion_rmse}, This RMSE: {acc}")
+            
+            print(f"[Training] Training completed! Model: {model_key} (RMSE: {acc:.4f})")
+            return {
+                "success": True,
+                "model_key": model_key,
+                "accuracy": acc,
+                "is_champion": is_champion
+            }
+            
+    except Exception as e:
+        print(f"[Training] Error in training cycle: {e}")
+        return {"success": False, "error": str(e)}
+
+if __name__ == "__main__":
+    time.sleep(60)
+    main()

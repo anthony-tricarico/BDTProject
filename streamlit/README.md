@@ -46,6 +46,7 @@ This Streamlit application provides a comprehensive dashboard for monitoring and
   - Special events
 - Interactive line chart showing predicted congestion levels
 - Average congestion level indicators with color coding
+- Added possibility to retrain model manually by pressing the appropriate button
 
 ### 5. Analytics Dashboard (page4.py)
 
@@ -86,6 +87,7 @@ This Streamlit application provides a comprehensive dashboard for monitoring and
 - Database integration for storing predictions
 - Retry mechanism for robust operation
 - Location-based feature consideration (schools, hospitals)
+- Added possibility to retrain model manually by pressing the appropriate button
 
 ## Technical Details
 
