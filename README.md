@@ -300,12 +300,21 @@ kafka-producer-passengers:
 
 and changing the value associated to `SLEEP` (lower values = faster data generation + higher CPU load, and vice versa).
 
-Below we report CPU and memory usage metrics relative to a `SLEEP` parameter of 0.05.
+### Resource Metrics for `v0.1.0`
+
+Below we report CPU and memory usage metrics relative to a `SLEEP` parameter of 0.05 for `v0.1.0` which includes automatic model retraining.
 
 ![CPU Usage](data/assets/cpu_usage.png)
 ![Memory Usage](data/assets/ram_usage.png)
 
-Based on these metrics it is recommended that Docker has access to at least 8 CPU cores and 6GB of RAM to enjoy a seamless experience.
+### Resource Metrics for `v0.1.1`
+
+Below we report CPU and memory usage metrics relative to a `SLEEP` parameter of 0.05 for `v0.1.1` which includes automatic model retraining.
+
+![CPU Usage](data/assets/CPUv0.1.1.png)
+![Memory Usage](data/assets/RAMv0.1.1.png)
+
+Based on these metrics it is recommended that Docker has access to at least 8 CPU cores and 7GB of RAM to enjoy a seamless experience.
 
 ## 3. Issues related to some Pages in the Dashboard
 
