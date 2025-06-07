@@ -44,7 +44,8 @@ if st.button("🔄 Refresh"):
 try:
     df = load_congestion_data()
 except Exception as e:
-    st.error(f"Error while loading data: {e}")
+    # st.error(f"Error while loading data: {e}")
+    st.warning("Loading data... please wait or refresh the page in a few minutes")
     st.stop()
 
 st.subheader("📋 Select Route")
@@ -65,21 +66,24 @@ filtered_df["hour"] = filtered_df["timestamp_x"].dt.hour
 if filtered_df.empty:
     st.warning("No data is available for this route and date.")
 else:
-    st.dataframe(filtered_df.sort_values("timestamp_x", ascending=False), hide_index=True)
+    try:
+        st.dataframe(filtered_df.sort_values("timestamp_x", ascending=False), hide_index=True)
 
-    st.subheader("📊 Congestion Overview by Hour")
-    hourly_avg = filtered_df.groupby("hour")["congestion_rate"].mean().reset_index()
+        st.subheader("📊 Congestion Overview by Hour")
+        hourly_avg = filtered_df.groupby("hour")["congestion_rate"].mean().reset_index()
 
-    chart = alt.Chart(hourly_avg).mark_bar(color="steelblue").encode(
-        x=alt.X("hour:O", title="Hour of Day", axis=alt.Axis(labelAngle=0)),
-        y=alt.Y("congestion_rate:Q", title="Average Congestion Rate")
-    ).properties(
-        width=700,
-        height=400,
-        title=f"Average Congestion Rate by Hour - {selected_date} - {selected_route}"
-    ) + alt.Chart(pd.DataFrame({"y": [1.0]})).mark_rule(color="red", strokeDash=[4, 4]).encode(y="y")
+        chart = alt.Chart(hourly_avg).mark_bar(color="steelblue").encode(
+            x=alt.X("hour:O", title="Hour of Day", axis=alt.Axis(labelAngle=0)),
+            y=alt.Y("congestion_rate:Q", title="Average Congestion Rate")
+        ).properties(
+            width=700,
+            height=400,
+            title=f"Average Congestion Rate by Hour - {selected_date} - {selected_route}"
+        ) + alt.Chart(pd.DataFrame({"y": [1.0]})).mark_rule(color="red", strokeDash=[4, 4]).encode(y="y")
 
-    st.altair_chart(chart, use_container_width=True)
+        st.altair_chart(chart, use_container_width=True)
+    except Exception as e:
+        st.warning("Waiting for the data to be loaded...")
 
     st.subheader("🚌 Suggested Additional Buses")
     high_cong_hours = hourly_avg[hourly_avg["congestion_rate"] > 1.0]["hour"].tolist()

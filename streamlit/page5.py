@@ -47,7 +47,8 @@ if st.button("🔄 Refresh"):
 try:
     df = load_congestion_data()
 except Exception as e:
-    st.error(f"Error while loading data: {e}")
+    # st.error(f"Error while loading data: {e}")
+    st.warning("Loading data... please wait or refresh the page in a few minutes")
     st.stop()
    
     

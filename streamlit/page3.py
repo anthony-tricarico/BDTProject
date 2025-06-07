@@ -161,11 +161,13 @@ def get_predictions_for_timeframe(
                     "prediction": result["prediction"]
                 })
             else:
-                st.error(f"Error making prediction: {response.text}")
+                # st.error(f"Error making prediction: {response.text}")
+                st.warning("Waiting for the prediction service to be ready...")
                 return []
                 
         except Exception as e:
-            st.error(f"Error: {str(e)}")
+            # st.error(f"Error: {str(e)}")
+            st.warning("Waiting for the prediction service to be ready...")
             return []
             
     return predictions

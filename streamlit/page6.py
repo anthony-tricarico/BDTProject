@@ -307,7 +307,8 @@ def main():
                     st.error(f"Error making prediction: {response.text}")
                     
             except Exception as e:
-                st.error(f"Error: {str(e)}")
+                # st.error(f"Error: {str(e)}")
+                st.warning("Waiting for the prediction service to be ready...")
         elif submitted:
             st.error("Please select a valid route before submitting.")
 
