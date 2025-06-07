@@ -29,6 +29,8 @@ Welcome to the repository for the Big Data Technologies Project! In this project
 - [Common Issues and Troubleshooting](#common-issues-and-troubleshooting)
   - [Error Reading .env Files](#1-error-reading-from-env-files)
   - [CPU Overload](#cpu-overload)
+    - [Resource Metrics for `v0.1.0`](#resource-metrics-for-v010)
+    - [Resource Metrics for `v0.1.1`](#resource-metrics-for-v011)
   - [Dashboard Issues](#issues-related-to-some-pages-in-the-dashboard)
 - [Limitations](#limitations)
   - [Dask to manage SQL Aggregations](#dask-to-manage-sql-aggregations)
@@ -309,7 +311,7 @@ Below we report CPU and memory usage metrics relative to a `SLEEP` parameter of 
 
 ### Resource Metrics for `v0.1.1`
 
-Below we report CPU and memory usage metrics relative to a `SLEEP` parameter of 0.05 for `v0.1.1` which includes automatic model retraining.
+Below we report CPU and memory usage metrics relative to a `SLEEP` parameter of 0.05 for `v0.1.1` which includes manual model retraining. Notice that the spikes in CPU usage are now under control.
 
 ![CPU Usage](data/assets/CPUv0.1.1.png)
 ![Memory Usage](data/assets/RAMv0.1.1.png)
