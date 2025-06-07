@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.13.4-slim
 
 WORKDIR /app
 
@@ -10,8 +10,12 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
 
-# Install dask[complete] first to ensure all dask components are available
-RUN pip install --no-cache-dir "dask[complete]>=2023.3.0" "distributed>=2023.3.0"
+# Install specific versions first to ensure consistency
+RUN pip install --no-cache-dir \
+    numpy==2.2.5 \
+    tornado==6.4.2 \
+    "dask[complete]==2025.5.1" \
+    "distributed==2025.5.1"
 
 # Install the rest of the requirements
 RUN pip install --no-cache-dir -r requirements.txt

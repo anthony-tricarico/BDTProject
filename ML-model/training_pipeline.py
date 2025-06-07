@@ -48,8 +48,14 @@ total_seats = 400
 def initialize_dask_client():
     """Initialize Dask client with proper error handling"""
     try:
-        # Try to connect to existing scheduler
-        client = Client("dask-scheduler:8786", timeout=30)
+        # Try to connect to existing scheduler with more resilient settings
+        client = Client(
+            "dask-scheduler:8786",
+            set_as_default=True,
+            serializers=['dask', 'pickle'],  # Use dask's serialization
+            deserializers=['dask', 'pickle'],  # Use dask's deserialization
+            direct_to_workers=True  # Try direct communication
+        )
         print("Connected to existing Dask scheduler")
         return client
     except Exception as e:
@@ -57,8 +63,6 @@ def initialize_dask_client():
         print("Creating local Dask cluster...")
         # Create a local cluster with explicit multiprocessing configuration
         cluster = LocalCluster(
-            n_workers=2,
-            threads_per_worker=2,
             processes=True,
             memory_limit='4GB'
         )
@@ -587,5 +591,5 @@ def run_training_pipeline():
         return {"success": False, "error": str(e)}
 
 if __name__ == "__main__":
-    time.sleep(60)
+    # time.sleep(60)
     main()

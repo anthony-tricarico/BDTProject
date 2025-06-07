@@ -299,15 +299,7 @@ services:
     build:
       context: ./ml-model
       dockerfile: Dockerfile.dask
-    command:
-      [
-        "dask-worker",
-        "dask-scheduler:8786",
-        "--nthreads",
-        "2",
-        "--memory-limit",
-        "4GB",
-      ]
+    command: ["dask-worker", "dask-scheduler:8786", "--memory-limit", "4GB"]
     depends_on:
       - dask-scheduler
     environment:
