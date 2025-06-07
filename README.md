@@ -311,7 +311,7 @@ Below we report CPU and memory usage metrics relative to a `SLEEP` parameter of 
 
 ### Resource Metrics for `v0.1.1`
 
-Below we report CPU and memory usage metrics relative to a `SLEEP` parameter of 0.05 for `v0.1.1` which includes manual model retraining. Notice that the spikes in CPU usage are now under control.
+Below we report CPU and memory usage metrics relative to a `SLEEP` parameter of 0.05 for `v0.1.1` which includes manual model retraining. Notice that the spikes in CPU usage are now under control. Also notice that the metrics for this version were acquired in a slightly different way (the container was kept running for a longer period of time, notice the lack of dotted lines in the visualizations below).
 
 ![CPU Usage](data/assets/CPUv0.1.1.png)
 ![Memory Usage](data/assets/RAMv0.1.1.png)
