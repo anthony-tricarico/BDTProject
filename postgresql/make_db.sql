@@ -89,6 +89,13 @@ CREATE TABLE IF NOT EXISTS feature_table (
 	weekend SMALLINT
 );
 
+-- CREATE TABLE IF NOT EXISTS total_occupancy (
+-- 	trip_id VARCHAR(50), 
+-- 	bus_id SMALLINT, 
+-- 	route VARCHAR(50), 
+-- 	stop_id SMALLINT, 
+-- 	total_passengers INTEGER);
+
 ALTER TABLE feature_table
 ADD CONSTRAINT unique_trip_timestamp
 UNIQUE (trip_id_x, timestamp_x);

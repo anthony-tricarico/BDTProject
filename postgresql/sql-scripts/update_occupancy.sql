@@ -62,15 +62,15 @@ JOIN
     bus b ON co.bus_id = b.bus_id;
 
 -- Update total occupancy
-INSERT INTO total_occupancy (trip_id, bus_id, route, stop_id, total_passengers)
-SELECT
-    trip_id,
-    bus_id,
-    route,
-    stop_id,
-    total_occupancy
-FROM
-    current_occupancy
-ON CONFLICT (trip_id, bus_id, route, stop_id)
-DO UPDATE SET
-    total_passengers = total_occupancy.total_passengers + EXCLUDED.total_passengers;
+-- INSERT INTO total_occupancy (trip_id, bus_id, route, stop_id, total_passengers)
+-- SELECT
+--     trip_id,
+--     bus_id,
+--     route,
+--     stop_id,
+--     total_occupancy
+-- FROM
+--     current_occupancy
+-- ON CONFLICT (trip_id, bus_id, route, stop_id)
+-- DO UPDATE SET
+--     total_passengers = total_occupancy.total_passengers + EXCLUDED.total_passengers;

@@ -451,8 +451,21 @@ def get_current_champion_accuracy():
 
 def run_training_pipeline():
     """Run the training pipeline once and return the training status"""
+    dask_client = None  # Initialize dask_client variable
     try:
         print("[Training] Starting training pipeline...")
+        
+        # Set multiprocessing start method for Dask
+        if os.name != 'nt':  # Not Windows
+            multiprocessing.set_start_method('fork', force=True)
+        else:
+            multiprocessing.set_start_method('spawn', force=True)
+            
+        # Initialize Dask client
+        print("[Training] Initializing Dask client...")
+        dask_client = initialize_dask_client()  # Store in dask_client variable
+        print("[Training] Dask client initialized successfully")
+        
         # Wait for services to be ready
         max_retries = 10
         retry_count = 0
@@ -589,7 +602,16 @@ def run_training_pipeline():
     except Exception as e:
         print(f"[Training] Error in training cycle: {e}")
         return {"success": False, "error": str(e)}
+    finally:
+        # Close the Dask client
+        if dask_client is not None:
+            try:
+                print("[Training] Closing Dask client...")
+                dask_client.close()
+                print("[Training] Dask client closed successfully")
+            except Exception as e:
+                print(f"[Training] Error closing Dask client: {e}")
 
 if __name__ == "__main__":
-    # time.sleep(60)
+    time.sleep(60)
     main()
