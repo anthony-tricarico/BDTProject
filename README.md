@@ -193,7 +193,7 @@ You can now proceed to building the app. To do that simply run from the root of 
 docker compose up --build -d
 ```
 
-This will build the project and start up all its components.
+This will build the project and start up all its components. In our tests, this took around 10 minutes with the longest build time being around 17 minutes, though based on your machine configurations you might get faster build times.
 
 ## Closing the app
 
