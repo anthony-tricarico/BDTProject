@@ -86,7 +86,11 @@ else:
         st.warning("Waiting for the data to be loaded...")
 
     st.subheader("🚌 Suggested Additional Buses")
-    high_cong_hours = hourly_avg[hourly_avg["congestion_rate"] > 1.0]["hour"].tolist()
+    try:
+        high_cong_hours = hourly_avg[hourly_avg["congestion_rate"] > 1.0]["hour"].tolist()
+    except Exception as e:
+        st.warning("Waiting for the data to be loaded...")
+        st.stop()
 
     merged_blocks = []
     if high_cong_hours:

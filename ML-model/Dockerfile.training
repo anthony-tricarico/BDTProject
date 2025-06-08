@@ -13,7 +13,7 @@ COPY requirements.txt .
 # Install specific versions first to ensure consistency
 RUN pip install --no-cache-dir \
     numpy==2.2.5 \
-    tornado==6.4.2 \
+    tornado==6.5.0 \
     "dask[complete]==2025.5.1" \
     "distributed==2025.5.1"
 
