@@ -355,7 +355,6 @@ def train_xgboost_model(final_clean, best_params = None):
             'objective': 'reg:squarederror',
             'max_depth': 8,
             'learning_rate': 0.05,
-            'n_estimators': 200,
             'subsample': 0.8,
             'colsample_bytree': 1.0,
             'min_child_weight': 1,
@@ -384,7 +383,7 @@ def train_xgboost_model(final_clean, best_params = None):
     model = xgb.train(
         best_params,
         dtrain,
-        num_boost_round=best_params['n_estimators'],
+        num_boost_round=200,  # Fixed value instead of using from params
         evals=[(dtrain, 'train'), (dtest, 'test')],
         early_stopping_rounds=20,
         verbose_eval=True
