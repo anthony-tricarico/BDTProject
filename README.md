@@ -302,6 +302,8 @@ kafka-producer-passengers:
 
 and changing the value associated to `SLEEP` (lower values = faster data generation + higher CPU load, and vice versa).
 
+Note: Unless you use directly the source code from `v0.1.0`, when you clone the repo you are always going to use a version that uses the implementations from `v0.1.1` in addition to some quality of life improvements which might make the dashboard work better.
+
 ### Resource Metrics for `v0.1.0`
 
 Below we report CPU and memory usage metrics relative to a `SLEEP` parameter of 0.05 for `v0.1.0` which includes automatic model retraining.
