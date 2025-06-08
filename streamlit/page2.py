@@ -4,6 +4,8 @@ import pydeck as pdk
 import time
 from sqlalchemy import create_engine, text
 import numpy as np
+import psycopg2
+from psycopg2 import Error as PostgresError
 
 st.set_page_config(layout="wide")
 st.title("🚌 Live Bus Route Visualization with Congestion")
@@ -38,12 +40,52 @@ def get_db_connection():
     engine = create_engine(f'postgresql+psycopg2://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}')
     return engine
 
-# Get available routes
+# Get available routes with feature_table filtering
 @st.cache_data
-def get_routes():
-    engine = get_db_connection()
-    query = "SELECT DISTINCT route_short_name, route_long_name FROM routes WHERE route_short_name IS NOT NULL ORDER BY route_short_name"
-    return pd.read_sql(query, engine)
+def get_route_options():
+    """Fetch available route options from the database"""
+    try:
+        conn = psycopg2.connect(
+            dbname=db_name,
+            user=db_user,
+            password=db_pass,
+            host=db_host,
+            port=db_port
+        )
+        cur = conn.cursor()
+        
+        # First try with feature_table join
+        query = """
+        SELECT DISTINCT r.route_short_name, r.route_long_name
+        FROM routes r
+        JOIN trips t ON r.route_id = t.route_id
+        JOIN feature_table ft ON t.trip_id = ft.trip_id_x
+        ORDER BY r.route_short_name;
+        """
+        
+        cur.execute(query)
+        routes = cur.fetchall()
+        
+        # If no results, try without feature_table join
+        if not routes:
+            query = """
+            SELECT DISTINCT r.route_short_name, r.route_long_name
+            FROM routes r
+            JOIN trips t ON r.route_id = t.route_id
+            ORDER BY r.route_short_name;
+            """
+            cur.execute(query)
+            routes = cur.fetchall()
+        
+        return [(route[0], f"{route[0]} - {route[1]}") for route in routes]
+    except PostgresError as e:
+        st.error(f"Database error: {str(e)}")
+        return []
+    finally:
+        if 'cur' in locals():
+            cur.close()
+        if 'conn' in locals():
+            conn.close()
 
 # Get route data with congestion information
 def get_route_data(route_short_name):
@@ -95,15 +137,14 @@ def get_route_data(route_short_name):
     
     return pd.read_sql(text(query), engine, params={"route_short_name": route_short_name})
 
-# Get available routes
-routes_df = get_routes()
-route_options = routes_df['route_short_name'].tolist()
+# Get route options
+route_options = get_route_options()
 
 # Route selection
 selected_route = st.selectbox(
     "Select a bus route:",
-    route_options,
-    format_func=lambda x: f"Route {x} - {routes_df[routes_df['route_short_name'] == x]['route_long_name'].iloc[0]}"
+    options=[r[0] for r in route_options],
+    format_func=lambda x: next((r[1] for r in route_options if r[0] == x), x)
 )
 
 if selected_route:
