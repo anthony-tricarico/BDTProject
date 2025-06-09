@@ -131,6 +131,7 @@ Each technology was chosen for its specific strengths and ability to handle diff
 │   └── manager.py          # Dashboard state management
 ├── docker-compose.yml      # Container orchestration
 ├── .gitignore             # Git ignore rules
+├── final_report.pdf       # PDF version of the final report for the project
 └── README.md              # Project documentation
 ```
 
