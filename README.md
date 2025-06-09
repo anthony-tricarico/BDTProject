@@ -33,6 +33,7 @@ Welcome to the repository for the Big Data Technologies Project! In this project
     - [Resource Metrics for `v0.1.0`](#resource-metrics-for-v010)
     - [Resource Metrics for `v0.1.1`](#resource-metrics-for-v011)
   - [Dashboard Issues](#3-issues-related-to-some-pages-in-the-dashboard)
+  - [Issues related to Model Retraining](#4-issues-related-to-model-retraining)
 - [Limitations](#limitations)
   - [Dask to manage SQL Aggregations](#dask-to-manage-sql-aggregations)
   - [Model Retraining and Comparison to Current Champion](#model-retraining-and-comparison-to-current-champion)
@@ -329,6 +330,12 @@ Based on these metrics it is recommended that Docker has access to at least 8 CP
 ## 3. Issues related to some Pages in the Dashboard
 
 Some pages in the dashboard might not work as intended in the first few minutes following the initial startup. While we work on these issues (which will be addressed in future versions of the program), for the time being we ask for your patience as the dashboard has been tested to work after some minutes from the correct initialization of all components. In particular, we recommend to use the `Refresh` button emdedded in the pages. This has been found to fix most of the errors after 2-5 minutes from startup.
+
+## 4. Issues related to Model Retraining
+
+If the load on the CPU or memory becomes too high you might encounter issues when retraining the model manually. In that case, verify that all containers (apart from `ml-model`) are all running correctly since in our tests we found that, when managing system resources, Docker would kill CPU-intensive processes to keep all other processes running. In case some containers have turned off, you can turn them back on from the Docker Desktop interface or however else you prefer. During our tests we noticed that this would usually fix the issue. Alternatively, and if possible, try to allocate more resources to Docker to alleviate this issue.
+
+NOTE: if you do not want to retrain the starting model on new data (which in the current implementation becomes available after one minute from the correct startup of all components), you can keep using the starting model even if the retraining threw an error. This was one way to ensure that this component is resilient and fault tolerant.
 
 # Limitations
 
