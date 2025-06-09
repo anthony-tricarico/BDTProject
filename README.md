@@ -83,6 +83,10 @@ Each technology was chosen for its specific strengths and ability to handle diff
 
 ![Pipeline](data/assets/DataPipeline.png)
 
+# Data Flow Diagram
+
+![Data Flow](data/assets/DataFlowDiagram.png)
+
 # Project Structure
 
 ```
