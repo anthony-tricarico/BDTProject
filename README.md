@@ -335,7 +335,7 @@ Some pages in the dashboard might not work as intended in the first few minutes 
 
 If the load on the CPU or memory becomes too high you might encounter issues when retraining the model manually. In that case, verify that all containers (apart from `ml-model`) are all running correctly since in our tests we found that, when managing system resources, Docker would kill CPU-intensive processes to keep all other processes running. In case some containers have turned off, you can turn them back on from the Docker Desktop interface or however else you prefer. During our tests we noticed that this would usually fix the issue. Alternatively, and if possible, try to allocate more resources to Docker to alleviate this issue.
 
-NOTE: if you do not want to retrain the starting model on new data (which in the current implementation becomes available after one minute from the correct startup of all components), you can keep using the starting model even if the retraining threw an error. This was one way to ensure that this component is resilient and fault tolerant.
+NOTE: if you do not want to retrain the starting model on new data (which in the current implementation becomes available after one minute from the correct startup of all components), you can keep using the starting model even if the retraining threw an error. This was one way to ensure that this component is resilient and fault tolerant. Similarly, if the starting model experiences an error during training (which can be seen from the logs in the `ml-model` container), you can trigger the retraining and use that model.
 
 # Limitations
 
