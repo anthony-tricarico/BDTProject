@@ -9,6 +9,7 @@ Welcome to the repository for the Big Data Technologies Project! In this project
 - [Team Composition](#team-composition)
 - [Tech Stack](#tech-stack)
 - [Data Pipeline and Infrastructure](#data-pipeline-and-infrastructure)
+- [Data Flow Diagram](#data-flow-diagram)
 - [Project Structure](#project-structure)
   - [Core Application Components](#core-application-components)
   - [Data Management](#data-management)
