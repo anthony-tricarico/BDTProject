@@ -377,35 +377,62 @@ def train_xgboost_model(final_clean, best_params = None):
     dtrain = xgb.DMatrix(X_train, label=y_train, feature_names=X_train.columns.tolist())
     dtest = xgb.DMatrix(X_test, label=y_test, feature_names=X_test.columns.tolist())
 
-    # No mlflow.start_run here; use the active run from the main loop
-    print(f"[MLflow] Logging params and metrics to run: {mlflow.active_run().info.run_id if mlflow.active_run() else 'No active run!'}")
-    mlflow.log_params(best_params)
+    # Wrap MLflow operations in try-except
+    try:
+        print(f"[MLflow] Logging params and metrics to run: {mlflow.active_run().info.run_id if mlflow.active_run() else 'No active run!'}")
+        mlflow.log_params(best_params)
+    except Exception as e:
+        print(f"[MLflow] Warning: Failed to log parameters: {e}")
+        print("[MLflow] Continuing without MLflow parameter logging...")
+
+    # Train the model (this doesn't depend on MLflow)
     model = xgb.train(
         best_params,
         dtrain,
-        num_boost_round=200,  # Fixed value instead of using from params
+        num_boost_round=200,
         evals=[(dtrain, 'train'), (dtest, 'test')],
         early_stopping_rounds=20,
         verbose_eval=True
     )
+
+    # Calculate metrics (this doesn't depend on MLflow)
     train_preds = model.predict(dtrain)
     test_preds = model.predict(dtest)
     train_rmse = root_mean_squared_error(y_train, train_preds)
     test_rmse = root_mean_squared_error(y_test, test_preds)
-    mlflow.log_metric("train_rmse", train_rmse)
-    mlflow.log_metric("test_rmse", test_rmse)
-    importance_types = ['weight', 'gain', 'total_gain', 'cover', 'total_cover']
-    for importance_type in importance_types:
-        importance_dict = model.get_score(importance_type=importance_type)
-        importance_df = pd.DataFrame({
-            'feature': list(importance_dict.keys()),
-            f'importance_{importance_type}': list(importance_dict.values())
-        }).sort_values(f'importance_{importance_type}', ascending=False)
-        importance_df.to_csv(f"feature_importance_{importance_type}.csv", index=False)
-        mlflow.log_artifact(f"feature_importance_{importance_type}.csv")
-    mlflow.xgboost.log_model(model, "model", registered_model_name="bus_congestion_model")
-    signature = infer_signature(X_test, test_preds)
-    mlflow.xgboost.log_model(model, "model", signature=signature)
+
+    # Try to log metrics to MLflow
+    try:
+        mlflow.log_metric("train_rmse", train_rmse)
+        mlflow.log_metric("test_rmse", test_rmse)
+    except Exception as e:
+        print(f"[MLflow] Warning: Failed to log metrics: {e}")
+        print("[MLflow] Continuing without MLflow metric logging...")
+
+    # Try to log feature importance
+    try:
+        importance_types = ['weight', 'gain', 'total_gain', 'cover', 'total_cover']
+        for importance_type in importance_types:
+            importance_dict = model.get_score(importance_type=importance_type)
+            importance_df = pd.DataFrame({
+                'feature': list(importance_dict.keys()),
+                f'importance_{importance_type}': list(importance_dict.values())
+            }).sort_values(f'importance_{importance_type}', ascending=False)
+            importance_df.to_csv(f"feature_importance_{importance_type}.csv", index=False)
+            mlflow.log_artifact(f"feature_importance_{importance_type}.csv")
+    except Exception as e:
+        print(f"[MLflow] Warning: Failed to log feature importance: {e}")
+        print("[MLflow] Continuing without feature importance logging...")
+
+    # Try to log the model to MLflow
+    try:
+        signature = infer_signature(X_test, test_preds)
+        mlflow.xgboost.log_model(model, "model", registered_model_name="bus_congestion_model")
+        mlflow.xgboost.log_model(model, "model", signature=signature)
+    except Exception as e:
+        print(f"[MLflow] Warning: Failed to log model: {e}")
+        print("[MLflow] Continuing without MLflow model logging...")
+
     return model
 
 def get_accuracy_model(final_clean, model, model_type='decision_tree'):
@@ -504,104 +531,125 @@ def run_training_pipeline():
 
         # Run the training pipeline inside an MLflow run
         print("[Training] Starting MLflow run...")
-        with mlflow.start_run(run_name="training_cycle"):
+        mlflow_active = False
+        try:
+            mlflow.start_run(run_name="training_cycle")
+            mlflow_active = True
             print(f"[Training] Started MLflow run: {mlflow.active_run().info.run_id}")
-            
-            print("[Training] Performing data aggregations...")
-            final_clean = perform_aggregations(selected_features=[
-                'trip_id_x', 'timestamp_x', 'peak_hour', 'sine_time',
-                'temperature', 'precipitation_probability', 'weather_code',
-                'traffic_level', 'event_dummy', 'congestion_rate', 'school', 'hospital', 'weekend'
-            ])
-            final_clean = final_clean.drop_duplicates(subset=['trip_id_x', 'timestamp_x'])
-            
-            print("[Training] Writing to SQL...")
-            write_to_sql(final_clean)
-            
-            print("[Training] Training XGBoost model...")
-            xgb_model = train_xgboost_model(final_clean)
-            acc = get_accuracy_model(final_clean, xgb_model, model_type='xgboost')
-            
-            print("[Training] Saving model to MinIO...")
-            minio_client = Minio(
-                "minio:9000",
-                access_key="minioadmin",
-                secret_key="minioadmin",
-                secure=False
-            )
-            
-            bucket_name = "models"
-            if not minio_client.bucket_exists(bucket_name):
-                minio_client.make_bucket(bucket_name)
-                print(f"[Training] Created bucket: {bucket_name}")
-            else:
-                print(f"[Training] Using existing bucket: {bucket_name}")
-            
-            timestamp = int(time.time())
-            model_key = f"challengers/challenger_{timestamp}.pkl"
-            model_buffer = io.BytesIO()
-            joblib.dump(xgb_model, model_buffer)
-            model_buffer.seek(0)
-            
-            print("[Training] Uploading model to MinIO...")
-            minio_client.put_object(
-                bucket_name,
-                model_key,
-                data=model_buffer,
-                length=model_buffer.getbuffer().nbytes,
-                part_size=10*1024*1024
-            )
-            
-            print("[Training] Sending metadata to Kafka...")
-            try:
-                message = {
-                    "model_key": model_key,
-                    "accuracy": float(acc),
-                    "timestamp": timestamp
-                }
-                print(f"[Training] Sending message to Kafka: {message}")
-                future = producer.send("model.train.topic", value=message)
-                record_metadata = future.get(timeout=10)
-                print(f"[Training] Message sent successfully to partition {record_metadata.partition} at offset {record_metadata.offset}")
-                producer.flush()
-                print("[Training] Producer flushed successfully")
-            except Exception as e:
-                print(f"[Training] Error sending to Kafka: {e}")
-                raise
-            finally:
-                print("[Training] Closing Kafka producer...")
-                producer.close()
-            
-            # Get current champion's accuracy
+        except Exception as e:
+            print(f"[MLflow] Warning: Failed to start MLflow run: {e}")
+            print("[MLflow] Continuing without MLflow tracking...")
+
+        print("[Training] Performing data aggregations...")
+        final_clean = perform_aggregations(selected_features=[
+            'trip_id_x', 'timestamp_x', 'peak_hour', 'sine_time',
+            'temperature', 'precipitation_probability', 'weather_code',
+            'traffic_level', 'event_dummy', 'congestion_rate', 'school', 'hospital', 'weekend'
+        ])
+        final_clean = final_clean.drop_duplicates(subset=['trip_id_x', 'timestamp_x'])
+        
+        print("[Training] Writing to SQL...")
+        write_to_sql(final_clean)
+        
+        print("[Training] Training XGBoost model...")
+        xgb_model = train_xgboost_model(final_clean)
+        acc = get_accuracy_model(final_clean, xgb_model, model_type='xgboost')
+        
+        print("[Training] Saving model to MinIO...")
+        minio_client = Minio(
+            "minio:9000",
+            access_key="minioadmin",
+            secret_key="minioadmin",
+            secure=False
+        )
+        
+        bucket_name = "models"
+        if not minio_client.bucket_exists(bucket_name):
+            minio_client.make_bucket(bucket_name)
+            print(f"[Training] Created bucket: {bucket_name}")
+        else:
+            print(f"[Training] Using existing bucket: {bucket_name}")
+        
+        timestamp = int(time.time())
+        model_key = f"challengers/challenger_{timestamp}.pkl"
+        model_buffer = io.BytesIO()
+        joblib.dump(xgb_model, model_buffer)
+        model_buffer.seek(0)
+        
+        print("[Training] Uploading model to MinIO...")
+        minio_client.put_object(
+            bucket_name,
+            model_key,
+            data=model_buffer,
+            length=model_buffer.getbuffer().nbytes,
+            part_size=10*1024*1024
+        )
+        
+        print("[Training] Sending metadata to Kafka...")
+        try:
+            message = {
+                "model_key": model_key,
+                "accuracy": float(acc),
+                "timestamp": timestamp
+            }
+            print(f"[Training] Sending message to Kafka: {message}")
+            future = producer.send("model.train.topic", value=message)
+            record_metadata = future.get(timeout=10)
+            print(f"[Training] Message sent successfully to partition {record_metadata.partition} at offset {record_metadata.offset}")
+            producer.flush()
+            print("[Training] Producer flushed successfully")
+        except Exception as e:
+            print(f"[Training] Error sending to Kafka: {e}")
+            raise
+        finally:
+            print("[Training] Closing Kafka producer...")
+            producer.close()
+        
+        # Get current champion's accuracy and try to register model
+        is_champion = False
+        try:
             current_champion_rmse = get_current_champion_accuracy()
-            is_champion = False
             
             if current_champion_rmse is None or acc < current_champion_rmse:
                 is_champion = True
-                # If this is a better model, promote it to production
-                client = mlflow.tracking.MlflowClient()
-                model_details = mlflow.register_model(f"runs:/{mlflow.active_run().info.run_id}/model", "bus_congestion_model")
-                client.transition_model_version_stage(
-                    name="bus_congestion_model",
-                    version=model_details.version,
-                    stage="Production"
-                )
-                print(f"[Training] New champion model! Old RMSE: {current_champion_rmse}, New RMSE: {acc}")
+                if mlflow_active:
+                    try:
+                        client = mlflow.tracking.MlflowClient()
+                        model_details = mlflow.register_model(f"runs:/{mlflow.active_run().info.run_id}/model", "bus_congestion_model")
+                        client.transition_model_version_stage(
+                            name="bus_congestion_model",
+                            version=model_details.version,
+                            stage="Production"
+                        )
+                        print(f"[Training] New champion model! Old RMSE: {current_champion_rmse}, New RMSE: {acc}")
+                    except Exception as e:
+                        print(f"[MLflow] Warning: Failed to register model: {e}")
+                        print("[MLflow] Continuing without model registration...")
             else:
                 print(f"[Training] Not a champion model. Champion RMSE: {current_champion_rmse}, This RMSE: {acc}")
-            
-            print(f"[Training] Training completed! Model: {model_key} (RMSE: {acc:.4f})")
-            return {
-                "success": True,
-                "model_key": model_key,
-                "accuracy": acc,
-                "is_champion": is_champion
-            }
+        except Exception as e:
+            print(f"[MLflow] Warning: Failed to check champion accuracy: {e}")
+            print("[MLflow] Continuing without champion model comparison...")
+
+        print(f"[Training] Training completed! Model: {model_key} (RMSE: {acc:.4f})")
+        return {
+            "success": True,
+            "model_key": model_key,
+            "accuracy": acc,
+            "is_champion": is_champion
+        }
             
     except Exception as e:
         print(f"[Training] Error in training cycle: {e}")
         return {"success": False, "error": str(e)}
     finally:
+        # Close MLflow run if it was started
+        if mlflow_active:
+            try:
+                mlflow.end_run()
+            except Exception as e:
+                print(f"[MLflow] Warning: Failed to end MLflow run: {e}")
+
         # Close the Dask client
         if dask_client is not None:
             try:
