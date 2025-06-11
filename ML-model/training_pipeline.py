@@ -123,8 +123,8 @@ def setup_mlflow():
         print(f"[MLflow] Error in setup: {e}")
         raise
 
-# Initialize MLflow tracking
-mlflow.set_tracking_uri(MLFLOW_DB_URL)
+# Initialize MLflow tracking with the server URL (not the database URL)
+mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 print(f"[MLflow] Tracking URI: {mlflow.get_tracking_uri()}")
 
 # Call the setup function to initialize MLflow
