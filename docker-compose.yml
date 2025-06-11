@@ -243,6 +243,8 @@ services:
       - kafka
       - db
       - minio
+      - mlflow
+      - mlflow-db
 
   kafka-consumer-model:
     build:
