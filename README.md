@@ -51,7 +51,7 @@ This project was developed by Group number 1 represented by:
 
 1. Virginia Di Mauro - [@virginiadimauro](https://github.com/virginiadimauro)
 2. Luisa Porzio - [@LuPorzio](https://github.com/LuPorzio)
-3. Anthony Tricarico - [@tricarico672](https://github.com/tricarico672)
+3. Anthony Tricarico - [@anthony-tricarico](https://github.com/anthony-tricarico)
 
 # Tech Stack
 
